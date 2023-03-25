@@ -13,15 +13,14 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { singleton | vector | macro_vector }
 
-vector = { (IMPLICIT ~ IMPLICIT_NEXT*) ~ implicit_suffixes? }
+vector = { (IMPLICIT ~ IMPLICIT_NEXT*) ~ implicit_singletons? }
 macro_vector = { (IMPLICIT ~ IMPLICIT_NEXT*) ~ define_macro }
 singleton = { exit | help | history | expand | delete | version | get }
 
 filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
-IMPLICIT = _{ IMPLICIT_OTHER | (negative? ~ search) }
-implicit_singletons = { (print ~ export) | (export ~ print?) | print }
-implicit_suffixes = { (filter* ~ implicit_singletons ~ filter*) | filter+ }
-IMPLICIT_NEXT = _{ (DELIMITER ~ IMPLICIT_OTHER) | ((DELIMITER | negative) ~ search) | (DELIMITER ~ negative ~ search) }
+IMPLICIT = _{ filter | IMPLICIT_OTHER | (negative? ~ search) }
+implicit_singletons = { (print ~ export?) | (export ~ print?) }
+IMPLICIT_NEXT = _{ filter | IMPLICIT_OTHER | ((DELIMITER | negative) ~ search) | (DELIMITER ~ negative ~ search) }
 export = { (output | append | overwrite) }
 IMPLICIT_OTHER = _{ setting | invoke | exec }
 
@@ -96,7 +95,7 @@ expand = { ^"@expand" ~ label }
 delete = { ^"@delete" ~  label }
 version = { ^"@version" }
 get = { ^"@get" ~ var }
-var = { span_key | domain_key | exact_key | format_key | search_all | display_all }
+var = { span_key | domain_key | exact_key | format_key | config }
 
 search = { ordered | segment+ }   // New nomenclature; searches have = 1 ordered-segments <xor> have >= 1 unordered-segments; segments are separated by OR ( | )
 
@@ -108,38 +107,45 @@ anchored = { (unordered | (fragment ~ (OR ~ fragment)*)) }
 unanchored = { ellipsis ~ anchored }
 unordered = { "[" ~ segment ~ segment* ~ "]" }
 
-search_all = { ^"search" }
-span_key = { ^"span" | ^"search.span" }
-SPAN_VAR = _{ ^"span" | ^"search.span" }
-span = { SPAN_VAR ~ EQUALS ~ span_option }
-span_option = { DIGITS | span_verse | clear }
-span_verse = { ^"verse" }
-clear = { "@" }
+config = ${ ^"settings" }
+VAR = _{ "%" }
+default = ${ ^"default" }
+global_reset = { VAR ~ config ~ EQUALS ~ default }
+local_reset = { VAR ~ config ~ COLON ~ default }
 
-domain_key = { ^"domain" | ^"search.domain" }
-DOMAIN_VAR = _{ ^"domain" | ^"search.domain" }
-domain = { DOMAIN_VAR ~ EQUALS ~ domain_option }
-domain_option = { domains | clear }
-domains = { av | avx }  // very specific domain for the AVX driver/parser implementation
+span_key = @{ ^"span" }
+SPAN_VAR = _{ span_key }
+span_var = { VAR ~ SPAN_VAR ~ SETTING ~ span_option }
+span_set = { VAR ~ SPAN_VAR ~ EQUALS ~ span_option }
+span_option = { DIGITS | span_verse | default }
+span_verse = { ^"verse" }
+
+domain_key = @{ ^"domain" }
+DOMAIN_VAR = _{ domain_key }
+domain_var = { VAR ~ DOMAIN_VAR ~ SETTING ~ domain_option }
+domain_set = { VAR ~ DOMAIN_VAR ~ EQUALS ~ domain_option }
+domain_option = { DOMAINS | default }
+DOMAINS = _{ av | avx }  // very specific domain for the AVX driver/parser implementation
 avx = { ^"modern" | "^avx" }
 av = { ^"kjv" | ^"av" }
 
-exact_key = { ^"exact" | ^"search.exact" }
-EXACT_VAR = _{ ^"exact" | ^"search.exact" }
-exact = { EXACT_VAR ~ EQUALS ~ exact_option }
-exact_option = { TRUE | FALSE | clear }
+exact_key = @{ ^"exact" }
+EXACT_VAR = _{ exact_key }
+exact_var = { VAR ~ EXACT_VAR ~ SETTING ~ exact_option }
+exact_set = { VAR ~ EXACT_VAR ~ EQUALS ~ exact_option }
+exact_option = { TRUE | FALSE | default }
 TRUE = { ^"true" | ^"yes" | "1" }
 FALSE = { ^"false" | ^"no" | "0" }
 
-display_all = { ^"display" }
-format_key = { ^"format" | ^"display.format" }
-FORMAT_VAR = _{ ^"format" | ^"display.format" }
-format = { FORMAT_VAR ~ EQUALS ~ format_option }
-format_option = { html | markdown | textual | json | clear }
-html = { ^"html" }
-markdown = { ^"markdown" | ^"md" }
-textual = { ^"text" }
-json = { ^"json" }
+format_key = @{ ^"format" }
+FORMAT_VAR = _{ format_key }
+format_var = { VAR ~ FORMAT_VAR ~ SETTING ~ format_option }
+format_set = { VAR ~ FORMAT_VAR ~ EQUALS ~ format_option }
+format_option = { html | markdown | textual | json | default }
+html = ${ ^"html" }
+markdown = ${ ^"markdown" | ^"md" }
+textual = ${ ^"text" }
+json = ${ ^"json" }
 
 print = { OPEN_BRACE ~ (DIGITS)* ~ CLOSE_BRACE }
 cv = { chapter ~ COLON ~ verse }
@@ -150,7 +156,7 @@ bookName = { ALPHA+ | (onetwothree ~ ALPHA+) }
 onetwothree = { ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
 negative = { "--" }
-setting = { span | domain | exact /* | heading | annotation */ }
+setting = { span_var | span_set | domain_var | domain_set | exact_var | exact_set | format_var | format_set }
 define_macro = { "||" ~ label}
 label = { ('a' .. 'z' | 'A' .. 'Z') ~ (('a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | "-" | "_")+)? }
 invoke = { DOLLAR ~ label }   // macro is a Rust keyword; cannot use it here
@@ -190,5 +196,9 @@ DOLLAR = _{ "$" }
 FILTER_OP = _{ "<<" }
 QUOTE = _{ "\"" }
 COLON = _{ ":" }
+SETTING = _{ "::" }
 SPACE = _{ " " }
+
+PAREN_OPEN = _{ "(" }
+PAREN_CLOSE = _{ "(" }
 
