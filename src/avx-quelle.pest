@@ -13,16 +13,16 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { singleton | vector | macro_vector }
 
-vector = { (IMPLICIT ~ IMPLICIT_NEXT*) ~ implicit_singletons? }
-macro_vector = { (IMPLICIT ~ IMPLICIT_NEXT*) ~ define_macro }
+vector = { (IMPLICIT+) ~ implicit_singletons? }
+macro_vector = { IMPLICIT+ ~ define_macro }
 singleton = { exit | help | history | expand | delete | version | get }
 
-filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
-IMPLICIT = _{ filter | IMPLICIT_OTHER | (negative? ~ search) }
+IMPLICIT = _{ IMPLICIT_OTHER | IMPLICIT_SEARCH }
 implicit_singletons = { (print ~ export?) | (export ~ print?) }
-IMPLICIT_NEXT = _{ filter | IMPLICIT_OTHER | ((DELIMITER | negative) ~ search) | (DELIMITER ~ negative ~ search) }
 export = { (output | append | overwrite) }
-IMPLICIT_OTHER = _{ setting | invoke | exec }
+IMPLICIT_SEARCH = _{ negative? ~ search ~ DELIMITER? }
+IMPLICIT_OTHER = _{ DELIMITER* ~ (filter | setting | invoke | exec) }
+filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
 
 feature = { (text | pos | pn | pn_pos12 | pos32 | greek | hebrew | loc | seg | lemma | wildcard | punc | decoration) }
 text = ${ ALPHA+ }
