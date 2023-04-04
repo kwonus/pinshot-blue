@@ -11,10 +11,10 @@
 // fragments are used to match terms (i.e. word tokens) across the corpus being searched; match logic should consider all features of the fragment/token when deeming it to be matched
 
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
-statement = { singleton | vector | macro_vector }
+statement = { singleton | macro_vector | vector }
 
-vector = { (IMPLICIT+) ~ implicit_singletons? }
 macro_vector = { IMPLICIT+ ~ define_macro }
+vector = { (IMPLICIT+) ~ implicit_singletons? }
 singleton = { exit | help | history | expand | delete | version | get }
 
 IMPLICIT = _{ IMPLICIT_OTHER | IMPLICIT_SEARCH }
