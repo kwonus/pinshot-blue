@@ -1,6 +1,6 @@
 # pin-shot-avx
 
-pin-shot-avx is effectively a fork of the pin-shot-blue microservice. Where it differs is that rather delivering peg parses via REST, it returns parses using Rust's FFI.
+pin-shot-avx is effectively a fork of the pin-shot-blue microservice. Where it differs is that rather than delivering peg parses via REST, it returns parses using Rust's FFI.
 Therefore, the pin-shot-avx library can be dynamically loaded by any language that can link with a C library (.dll or .so). This simplifies interop, and is the preferred
 method for executing PEG parses from the [blueprint-blue libary](https://github.com/kwonus/blueprint-blue/tree/main/Blueprint-Blue-Lib) [C# 7]. 
 
