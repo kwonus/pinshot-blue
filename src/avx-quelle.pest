@@ -243,6 +243,3 @@ COLON = _{ ":" }
 SETTING = _{ "::" }
 SPACE = _{ " " }
 
-PAREN_OPEN = _{ "(" }
-PAREN_CLOSE = _{ "(" }
-
