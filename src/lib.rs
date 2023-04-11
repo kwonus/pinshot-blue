@@ -5,7 +5,6 @@ extern crate pest_derive;
 use pest::Parser;
 use pest::iterators::Pairs;
 use serde::Serialize;
-use serde_json::Result;
 
 #[derive(Parser)]
 #[grammar = "avx-quelle.pest"]
@@ -110,7 +109,6 @@ fn get_parse_raw(stmt: &str) -> RawParseResult {
 // and from:     http://jakegoulding.com/rust-ffi-omnibus/string_return/
 
 use std::ffi::{c_char, CString};
-use std::task::Poll;
 
 /// Log a message at the specified level.
 ///
