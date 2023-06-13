@@ -9,6 +9,8 @@
 // segments contain [>= 1] fragments
 // fragments contain [>= 1] features
 // fragments are used to match terms (i.e. word tokens) across the corpus being searched; match logic should consider all features of the fragment/token when deeming it to be matched
+//
+// Version: 2.0.612
 
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { singleton | macro_vector | vector }
@@ -16,7 +18,7 @@ statement = { singleton | macro_vector | vector }
 invocation = ${ invoke ~ control_suffix? }
 macro_vector = { IMPLICIT+ ~ apply }
 vector = { (IMPLICIT+) ~ implicit_singletons? }
-singleton = { exit | help | history | expand | delete | absorb | version | get | reset | initialize }
+singleton = { exit | help | history | expand | delete | absorb | version | get | clear | reset | initialize }
 
 IMPLICIT = _{ IMPLICIT_OTHER | IMPLICIT_SEARCH }
 implicit_singletons = { (print ~ export?) | (export ~ print?) }
@@ -25,8 +27,8 @@ IMPLICIT_SEARCH = _{ DELIMITER? ~ search }
 IMPLICIT_OTHER = _{ filter | setting | invocation }
 filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
 
-feature = { (text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | wildcard | punc | decoration | delta ) }
-not_feature = { "-:" ~ feature}
+item = { (text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | wildcard | punc | decoration | delta ) }
+feature = { not? ~ item}
 delta = { ^"/delta/" }
 
 pn = { ^"/1p/" | ^"/2p/" | ^"/3p/" | "/indefinite/" }
@@ -105,13 +107,14 @@ absorb = ${ SINGLETON ~ ^"absorb" ~ (label | historic) }
 version = { SINGLETON ~ ^"version" }
 reset = { SINGLETON ~ ^"reset" }
 initialize = { SINGLETON ~ ^"initialize" ~ ^"history" }
-get = { SINGLETON ~ ^"get" ~ var }
+get = { SINGLETON ~ ^"get" ~ var? }
+clear = { SINGLETON ~ ^"clear" ~ var? }
 var = { span_key | lexicon_key | display_key | match_key | format_key }
 
 search = { ordered | unordered }   // quoted-searches are ordered // unquoted-searches are unordered
 
 segment = { fragment ~ (AND ~ fragment)* } // Segments have >= 1 Unquoted (unordered) fragments <xor> have >= quoted (ordered) fragments
-fragment = { (feature | not_feature) ~ (OR ~ (feature | not_feature))* } // Fragments have >= 1 features, separated by AND( & ) // A single token in a document must match all features to be deemed a full-match // partial-matches are not designed into the grammar
+fragment = { feature+ } // Fragments have >= 1 features, separated by AND( & ) // A single token in a document must match all features to be deemed a full-match // partial-matches are not designed into the grammar
 
 ordered = { QUOTE ~ (segment ~ (unanchored | segment)*) ~ QUOTE } // Quoted/Ordered segment
 unanchored = { ellipsis ~ segment }
@@ -502,5 +505,6 @@ nupos = {
 	^"#zz" }
 
 text = ${ ALPHA+ }
+not = ${ "-:" }
 disable_lemma_match = { "!" }
 
