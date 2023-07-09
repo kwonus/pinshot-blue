@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
@@ -16,21 +19,21 @@ struct ParseResult {
 }
 
 #[derive(Serialize)]
-struct Parsed {
+pub struct Parsed {
     rule: String,
     text: String,
     children: Vec<Parsed>,
 }
 
 #[derive(Serialize)]
-struct RootParse {
+pub struct RootParse {
     input: String,
     result: Vec<Parsed>,
     error: String,
 }
 
 #[derive(Serialize)]
-struct RawParseResult {
+pub struct RawParseResult {
     input: String,
     result: String,
     error: String,
@@ -69,7 +72,7 @@ fn get_parse(stmt: &str) -> ParseResult {
     }
 }
 
-fn get_parse_raw(stmt: &str) -> RawParseResult {
+pub fn get_parse_raw(stmt: &str) -> RawParseResult {
     let input_string = stmt.to_string();
     let return_input_string = input_string.clone();
 
