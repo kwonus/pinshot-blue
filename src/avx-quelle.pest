@@ -10,7 +10,7 @@
 // fragments contain [>= 1] features
 // fragments are used to match terms (i.e. word tokens) across the corpus being searched; match logic should consider all features of the fragment/token when deeming it to be matched
 //
-// Version: 2.0.3.708
+// Version: 2.0.3.709
 
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { singleton | macro_vector | vector }
@@ -29,6 +29,9 @@ filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
 
 item = { (text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | wildcard | punc | decoration | delta ) }
 feature = { not? ~ item}
+fragment = { feature ~ (OR ~ feature)* } // Fragments have >= 1 features, separated by OR( | ) // Each single token need only match a single feature in the fragment to be deemed a full-match
+
+
 delta = { ^"/delta/" }
 
 pn = { ^"/1p/" | ^"/2p/" | ^"/3p/" | "/indefinite/" }
@@ -113,8 +116,7 @@ var = { span_key | lexicon_key | display_key | match_key | format_key }
 
 search = { ordered | unordered }   // quoted-searches are ordered // unquoted-searches are unordered
 
-segment = { fragment ~ (AND ~ fragment)* } // Segments have >= 1 Unquoted (unordered) fragments <xor> have >= quoted (ordered) fragments
-fragment = { feature+ } // Fragments have >= 1 features, separated by AND( & ) // A single token in a document must match all features to be deemed a full-match // partial-matches are not designed into the grammar
+segment = { fragment ~ (AND ~ fragment)* } // Segments have one or more unquoted (unordered) fragments <xor> have one or more quoted (ordered) fragments // Fragments are anded .... ALL MUST MATCH
 
 ordered = { QUOTE ~ (segment ~ (unanchored | segment)*) ~ QUOTE } // Quoted/Ordered segment
 unanchored = { ellipsis ~ segment }
@@ -189,7 +191,7 @@ greek = ${ DIGITS ~ ^":G" }
 hebrew = ${ DIGITS ~ ^":H" }
 
 lemma = { "\\" ~ text ~ "\\" }
-wildcard = ${ (text ~ "*" ~ text) | ("*" ~text) | (text ~ "*" ) }
+wildcard = ${ text? ~ "*" ~ text? }
 ELLIPSIS = @{ "..." }
 ellipsis = _{ "..." }
 
