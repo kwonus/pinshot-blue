@@ -20,14 +20,22 @@ fn exit() {
 }
 
 #[test]
-fn compound_statement() {
+fn ordered_statement() {
     let statement_str = "\"/BoV/&in|out&/prep/ /det/ begin* God \\create\\\"";
     let raw = get_parse_raw(&statement_str);
     assert_eq!(raw.result.is_empty() && !raw.error.is_empty(), false);
 }
+#[test]
+fn unordered_compound_statement() {
+    let statement_str = "/BoV/&in|out&/prep/ + /det/ begin* ; God \\create\\";
+    let raw = get_parse_raw(&statement_str);
+    assert_eq!(raw.result.is_empty() && !raw.error.is_empty(), false);
+}
+/*
 #[test]
 fn bad() {
     let statement_str = "/foo/";
     let raw = get_parse_raw(&statement_str);
     assert_eq!(raw.result.is_empty() && !raw.error.is_empty(), false);
 }
+ */

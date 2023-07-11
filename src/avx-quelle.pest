@@ -10,7 +10,7 @@
 // fragments contain [>= 1] features
 // fragments are used to match terms (i.e. word tokens) across the corpus being searched; match logic should consider all features of the fragment/token when deeming it to be matched
 //
-// Version: 2.0.3.709
+// Version: 2.0.3.711
 
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { singleton | macro_vector | vector }
@@ -23,7 +23,7 @@ singleton = { exit | help | history | expand | delete | absorb | version | get |
 IMPLICIT = _{ IMPLICIT_OTHER | IMPLICIT_SEARCH }
 implicit_singletons = { (print ~ export?) | (export ~ print?) }
 export = { (output | append | overwrite) }
-IMPLICIT_SEARCH = _{ DELIMITER? ~ search }
+IMPLICIT_SEARCH = _{ search ~ SEARCH_EXPLICIT_TERMINATOR? }
 IMPLICIT_OTHER = _{ filter | setting | invocation }
 filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
 
@@ -502,7 +502,7 @@ HEX32 = ${ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX }
 ALPHA = _{ 'a' .. 'z' | 'A' .. 'Z' }
 AND = _{ "&" }
 OR = _{ "|" }
-DELIMITER = _{ "+" | ";" }
+SEARCH_EXPLICIT_TERMINATOR = _{ "+" | ";" }
 EQUALS = _{ "=" }
 OPEN_BRACE = _{ "[" }
 CLOSE_BRACE = _{ "]" }
