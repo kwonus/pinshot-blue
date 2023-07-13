@@ -1,4 +1,4 @@
-use crate::get_parse_raw;
+use crate::{assert_grammar_revision_internal, get_parse_raw};
 
 #[test]
 fn invoke() {
@@ -30,6 +30,17 @@ fn unordered_compound_statement() {
     let statement_str = "/BoV/&in|out&/prep/ + /det/ begin* ; God \\create\\";
     let raw = get_parse_raw(&statement_str);
     assert_eq!(raw.result.is_empty() && !raw.error.is_empty(), false);
+}
+#[test]
+fn assert_correct_version() {
+    let v :u32 = 203_0712;
+    let result = assert_grammar_revision_internal(v);
+    assert_eq!(result, v);
+}
+#[test]
+fn assert_incorrect_version() {
+    let result = assert_grammar_revision_internal(203_0701);
+    assert_eq!(result, 0);
 }
 /*
 #[test]

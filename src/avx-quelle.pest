@@ -10,10 +10,11 @@
 // fragments contain [>= 1] features
 // fragments are used to match terms (i.e. word tokens) across the corpus being searched; match logic should consider all features of the fragment/token when deeming it to be matched
 //
-// Version: 2.0.3.711
 
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
-statement = { singleton | macro_vector | vector }
+statement = { singleton | macro_vector | vector | avx_rev }
+AVX_QUERY = _{ ^"_AVX_REV_" ~  ":=" }
+avx_rev = { AVX_QUERY ~ "2.0.3.712" }   // unpublished grammar rule allows clients to assert expected version compatibility via extern C function call
 
 invocation = ${ invoke ~ control_suffix? }
 macro_vector = { IMPLICIT+ ~ apply }
