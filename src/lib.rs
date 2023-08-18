@@ -172,7 +172,7 @@ pub unsafe extern "C" fn create_quelle_parse_raw(c_stmt: *const c_char) -> *mut 
     if statement_str.is_empty() {
         raw.error = "Invalid Input Error".to_string();
     }
-    if raw.result.is_empty() && !raw.error.is_empty() {
+    if raw.result.is_empty() && raw.error.is_empty() {
         raw.error = "Unexpected empty parse result".to_string();
     }
 
