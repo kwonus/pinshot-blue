@@ -24,8 +24,8 @@ singleton = { exit | help | history | expand | delete | absorb | version | get |
 IMPLICIT = _{ IMPLICIT_OTHER | IMPLICIT_SEARCH }
 implicit_singletons = { (print ~ export?) | (export ~ print?) }
 export = { (output | append | overwrite) }
-IMPLICIT_SEARCH = _{ search ~ SEARCH_EXPLICIT_TERMINATOR? }
 IMPLICIT_OTHER = _{ filter | setting | invocation }
+IMPLICIT_SEARCH = _{ search ~ SEARCH_EXPLICIT_TERMINATOR? }
 filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
 
 item = { (text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | wildcard | punc | decoration | delta ) }
@@ -116,7 +116,6 @@ clear = { SINGLETON ~ ^"clear" ~ var? }
 var = { span_key | lexicon_key | display_key | match_key | format_key }
 
 search = { ordered | unordered }   // quoted-searches are ordered // unquoted-searches are unordered
-
 segment = { fragment ~ (AND ~ fragment)* } // Segments have one or more unquoted (unordered) fragments <xor> have one or more quoted (ordered) fragments // Fragments are anded .... ALL MUST MATCH
 
 ordered = { QUOTE ~ (segment ~ (unanchored | segment)*) ~ QUOTE } // Quoted/Ordered segment
@@ -193,12 +192,11 @@ hebrew = ${ DIGITS ~ ^":H" }
 
 lemma = { "\\" ~ text ~ "\\" }
 wildcard = ${ text? ~ "*" ~ text? }
-ELLIPSIS = @{ "..." }
 ellipsis = _{ "..." }
 
-append = { ">>" ~ filename }
-output = { ">" ~ filename }
-overwrite = { "=>" ~ filename }
+append = ${ ">>" ~ filename }
+output = ${ ">" ~ filename }
+overwrite = ${ "=>" ~ filename }
 
 FILESPEC = _{ ('a' .. 'z' | 'A' .. 'Z' | '0' .. '9') | "/" | "\\" | "-" | "_" | ":" }
 quoted_filespec = ${ QUOTE ~ FILESPEC ~ (FILESPEC | " ") + ~ QUOTE }
