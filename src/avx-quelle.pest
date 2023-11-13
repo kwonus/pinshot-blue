@@ -194,13 +194,13 @@ lemma = { "\\" ~ text ~ "\\" }
 wildcard = ${ text? ~ "*" ~ text? }
 ellipsis = _{ "..." }
 
-append = ${ ">>" ~ filename }
-output = ${ ">" ~ filename }
-overwrite = ${ "=>" ~ filename }
+append = { ">>" ~  filename }
+output = { ">" ~ filename }
+overwrite = { "=>" ~ filename }
 
 FILESPEC = _{ ('a' .. 'z' | 'A' .. 'Z' | '0' .. '9') | "/" | "\\" | "-" | "_" | ":" }
 quoted_filespec = ${ QUOTE ~ FILESPEC ~ (FILESPEC | " ") + ~ QUOTE }
-unquoted_legal = { FILESPEC+ }
+unquoted_legal = ${ FILESPEC+ }
 filename = { quoted_filespec | unquoted_legal }
 
 // SEARCH
