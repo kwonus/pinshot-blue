@@ -14,7 +14,7 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { singleton | macro_vector | vector | avx_rev }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  ":=" }
-avx_rev = { AVX_QUERY ~ "2.0.3.901" }   // unpublished grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.0.3.B23" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 invocation = ${ invoke ~ control_suffix? }
 macro_vector = { IMPLICIT+ ~ apply }
@@ -29,9 +29,9 @@ IMPLICIT_SEARCH = _{ search ~ SEARCH_EXPLICIT_TERMINATOR? }
 filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
 
 item = { (text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | wildcard | punc | decoration | delta ) }
+fragment = { feature_option ~ (AND ~ feature_option)* }
+feature_option = { feature ~ (OR ~ feature)* }
 feature = { not? ~ item}
-fragment = { feature ~ (OR ~ feature)* } // Fragments have >= 1 features, separated by OR( | ) // Each single token need only match a single feature in the fragment to be deemed a full-match
-
 
 delta = { ^"/delta/" }
 
@@ -116,11 +116,11 @@ clear = { SINGLETON ~ ^"clear" ~ var? }
 var = { span_key | lexicon_key | display_key | match_key | format_key }
 
 search = { ordered | unordered }   // quoted-searches are ordered // unquoted-searches are unordered
-segment = { fragment ~ (AND ~ fragment)* } // Segments have one or more unquoted (unordered) fragments <xor> have one or more quoted (ordered) fragments // Fragments are anded .... ALL MUST MATCH
 
-ordered = { QUOTE ~ (segment ~ (unanchored | segment)*) ~ QUOTE } // Quoted/Ordered segment
-unanchored = { ellipsis ~ segment }
-unordered = { segment+ }
+unordered = { fragment+ } // Unordered segment
+ordered = { QUOTE ~ anchored ~ (anchored ~ unanchored)* ~ QUOTE } // Quoted/Ordered segment
+unanchored = { ellipsis ~ fragment }
+anchored = { fragment } // Segments have one or more unquoted (unordered) fragments <xor> have one or more quoted (ordered) fragments // Fragments are anded .... ALL MUST MATCH
 
 control_suffix = ${ ^"::current" }     // seems to be bug in pest crate iff this is named "settings_option" instead of "control_suffix"
 span_key = @{ ^"span" }
@@ -157,7 +157,6 @@ EXACT = ${ ^"exact" ~ "0" }
 THIRTY_THREE_PLUS = ${ ("3" ~ ('3' .. '9')) }
 THIRTY_SOMETHING = _{ THIRTY_THREE_PLUS }
 FUZZY = ${ ( (('4' .. '9') ~ ('0' .. '9')) | ('1' .. '9') ) | THIRTY_SOMETHING } // legal thresholds are from 33 to 99 (100% is excluded because that would represent an exact-match
-
 
 format_key = @{ ^"format" }
 FORMAT_VAR = _{ format_key }

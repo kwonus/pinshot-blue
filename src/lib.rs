@@ -198,7 +198,7 @@ pub extern "C" fn delete_quelle_parse(c_lent: *mut c_char) -> bool {
 
 pub fn assert_grammar_revision_internal(iversion: u32) -> u32 {  // "2.0.3.711" == 203_0711
 
-    let major :u32 =  iversion / 100_0000 ;
+    let major :u32 =  iversion / 100_0000;
     let minor :u32 = (iversion /  10_0000) % 10;
     let year  :u32 = (iversion /   1_0000) % 10;
     let mmdd  :u32 =  iversion %   1_0000;
