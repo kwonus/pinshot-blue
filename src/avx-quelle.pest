@@ -14,7 +14,7 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { singleton | macro_vector | vector | avx_rev }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  ":=" }
-avx_rev = { AVX_QUERY ~ "2.0.3.B23" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.0.3.B27" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 invocation = ${ invoke ~ control_suffix? }
 macro_vector = { IMPLICIT+ ~ apply }
@@ -176,7 +176,6 @@ chapter = { COLON ~ DIGIT_byte }
 bookName = { ALPHA+ | (onetwothree ~ ALPHA+) }
 onetwothree = { ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
-negate = { "-:" }
 setting = { span_var | span_set | lexicon_var | lexicon_set | display_var | display_set | match_var | match_set | format_var | format_set }
 apply = { "||" ~ label} // macro is a Rust keyword and cannot be used in here
 label = ${ ('a' .. 'z' | 'A' .. 'Z') ~ (('a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | "-" | "_")+)? }
@@ -478,7 +477,6 @@ nupos = {
 	^"#zz" }
 
 text = ${ ALPHA+ }
-not = ${ "-:" }
 disable_lemma_match = { "!" }
 
 history_args = { (history_range ~ history_max?) | (history_max ~ history_range?) }
@@ -514,4 +512,5 @@ VAR = _{ "%" }
 SINGLETON = _{ "@" }
 HASHTAG = _{ "@" }
 default = ${ ^"default" }
+not = { "-" }
 
