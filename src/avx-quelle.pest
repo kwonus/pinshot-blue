@@ -13,8 +13,8 @@
 
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { singleton | macro_vector | vector | avx_rev }
-AVX_QUERY = _{ ^"_AVX_REV_" ~  ":=" }
-avx_rev = { AVX_QUERY ~ "2.0.3.B27" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
+avx_rev = { AVX_QUERY ~ "2.0.3.C02" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 invocation = ${ invoke ~ control_suffix? }
 macro_vector = { IMPLICIT+ ~ apply }
@@ -128,7 +128,7 @@ SPAN_VAR = _{ span_key }
 span_var = { VAR ~ SPAN_VAR ~ SETTING ~ span_option }
 span_set = { VAR ~ SPAN_VAR ~ EQUALS ~ span_option }
 span_option = { DIGIT_le3 | span_verse | default }
-span_verse = { ^"verse" }
+span_verse = ${ ^"verse" }
 
 lexicon_key = @{ ^"lexicon" }
 LEXICON_VAR = _{ lexicon_key }
@@ -169,7 +169,6 @@ textual = ${ ^"text" }
 json = ${ ^"json" }
 
 print = { OPEN_BRACE ~ (DIGITS)* ~ CLOSE_BRACE }
-cv = { chapter ~ COLON ~ verse }
 book = { (bookName | bookNum)}
 verse = { chapter ~ COLON ~ DIGIT_byte }
 chapter = { COLON ~ DIGIT_byte }
@@ -499,14 +498,14 @@ ALPHA = _{ 'a' .. 'z' | 'A' .. 'Z' }
 AND = _{ "&" }
 OR = _{ "|" }
 SEARCH_EXPLICIT_TERMINATOR = _{ "+" | ";" }
-EQUALS = _{ "=" }
+EQUALS = _{ ":=" }
 OPEN_BRACE = _{ "[" }
 CLOSE_BRACE = _{ "]" }
 DOLLAR = _{ "$" }
 FILTER_OP = _{ "<" }
 QUOTE = _{ "\"" }
 COLON = _{ ":" }
-SETTING = _{ "::" }
+SETTING = _{ "=" }
 SPACE = _{ " " }
 VAR = _{ "%" }
 SINGLETON = _{ "@" }
