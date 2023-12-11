@@ -14,7 +14,7 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { singleton | macro_vector | vector | avx_rev }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "2.0.3.C02" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.0.4.101" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 invocation = ${ invoke ~ control_suffix? }
 macro_vector = { IMPLICIT+ ~ apply }
@@ -151,7 +151,7 @@ match_key = @{ ^"similarity" }
 MATCH_VAR = _{ match_key }
 match_var = { VAR ~ MATCH_VAR ~ SETTING ~ match_option }
 match_set = { VAR ~ MATCH_VAR ~ EQUALS ~ match_option }
-match_option =${ ((FUZZY | PRECISE) ~ disable_lemma_match) | EXACT }
+match_option =${ ((FUZZY | PRECISE) ~ enable_lemma_match) | EXACT }
 PRECISE = ${ ^"precise" ~ "100" }
 EXACT = ${ ^"exact" ~ "0" }
 THIRTY_THREE_PLUS = ${ ("3" ~ ('3' .. '9')) }
@@ -476,7 +476,7 @@ nupos = {
 	^"#zz" }
 
 text = ${ ALPHA+ }
-disable_lemma_match = { "!" }
+enable_lemma_match = { "!" }
 
 history_args = { (history_range ~ history_max?) | (history_max ~ history_range?) }
 history_since = { ^"since" ~ history_date }
