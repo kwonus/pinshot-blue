@@ -196,55 +196,48 @@ pub extern "C" fn delete_quelle_parse(c_lent: *mut c_char) -> bool {
     };
 }
 
-pub fn assert_grammar_revision_internal(iversion: u32) -> u32 {  // "2.0.3.711" == 203_0711
+pub fn assert_grammar_revision_internal(major: u8, minor: u8, ymdd: u16) -> u16 {  // "2.0.Y.MDD" ... 3B21 would be 2.0.3.B21
 
-    let major :u32 =  iversion / 100_0000;
-    let minor :u32 = (iversion /  10_0000) % 10;
-    let year  :u32 = (iversion /   1_0000) % 10;
-    let mmdd  :u32 =  iversion %   1_0000;
-
-    let mm :u32 =  mmdd / 100;
-    let dd :u32 =  mmdd % 100;
+    let y  = (ymdd & 0xF000) >> 12;
+    let m  = (ymdd & 0x0F00) >>  8;
+    let d1 = (ymdd & 0x00F0) >>  4;  // days are not truly hex in this encoding ... dd is 01, 02, 03, ... , 31 || all hex numbers excluded e.g. 0x31 means decimal 31 in this encoding
+    let d2 =  ymdd & 0x000F;         // days are not truly hex in this encoding ... dd is 01, 02, 03, ... , 31 || all hex numbers excluded e.g. 0x31 means decimal 31 in this encoding
 
     let mut decimal = itoa::Buffer::new();
-    let mut version = "_AVX_REV_ := ".to_owned() + decimal.format(major) + "." + decimal.format(minor) + "." + decimal.format(year) + ".";
+    let mut version = "_AVX_REV_ =? ".to_owned() + decimal.format(major) + "." + decimal.format(minor) + "." + decimal.format(y) + ".";
 
-    if mm > 12 {
+    if m > 12 {
         version.push_str("X");
     }
-    else if mm == 12 {
+    else if m == 12 {
         version.push_str("C");
     }
-    else if mm == 11 {
+    else if m == 11 {
         version.push_str("B");
     }
-    else if mm == 10 {
+    else if m == 10 {
         version.push_str("A");
     }
     else {
-        version.push_str(decimal.format(mm));
+        version.push_str(decimal.format(m));
     }
-    if dd < 10 {
-        version.push_str("0");
+    version.push_str(decimal.format(d1));
+    version.push_str(decimal.format(d2));
+
+    let result = get_parse(&version);
+
+    if !result.error.is_empty() {
+        return 0;
     }
-    version.push_str(decimal.format(dd));
-
-    if major > 0 && major < 10 && minor < 10 && year >= 3 && year < 10 && mm > 0 && mm <= 12 && dd > 0 && dd <= 31 {
-        let result = get_parse(&version);
-
-        if !result.error.is_empty() {
-            return 0;
-        }
-        if result.parse.len() == 1 && result.parse[0].children.len() == 1 && result.parse[0].rule == "statement" &&  result.parse[0].children[0].rule == "avx_rev" {
-            return iversion;
-        }
+    if result.parse.len() == 1 && result.parse[0].children.len() == 1 && result.parse[0].rule == "statement" &&  result.parse[0].children[0].rule == "avx_rev" {
+        return ymdd;
     }
     return 0;
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn assert_grammar_revision(iversion: u32) -> u32 {  // "2.0.3.711" == 203_0711
-    return assert_grammar_revision_internal(iversion);
+pub unsafe extern "C" fn assert_grammar_revision(ymdd: u16) -> u16 {  // "2.0.3.711" == 203_0711
+    return assert_grammar_revision_internal(2, 0, ymdd);
 }
 
 fn recurse(children: Pairs<Rule>, items: &mut Vec<Parsed>)
