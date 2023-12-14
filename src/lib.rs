@@ -240,6 +240,11 @@ pub unsafe extern "C" fn assert_grammar_revision(ymdd: u16) -> u16 {  // "2.0.3.
     return assert_grammar_revision_internal(2, 0, ymdd);
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn get_library_revision() -> u16 {
+    return 0x4101;
+}
+
 fn recurse(children: Pairs<Rule>, items: &mut Vec<Parsed>)
 {
     for pair in children {
