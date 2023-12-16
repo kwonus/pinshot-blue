@@ -14,17 +14,17 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { singleton | macro_vector | vector | avx_rev }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "2.0.4.101" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.0.3.C15" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 invocation = ${ invoke ~ control_suffix? }
 macro_vector = { IMPLICIT+ ~ apply }
 vector = { (IMPLICIT+) ~ implicit_singletons? }
-singleton = { exit | help | history | expand | delete | absorb | version | get | clear | reset | initialize }
+singleton = { exit | help | history | expand | delete | absorb | get | set | clear | initialize }
 
 IMPLICIT = _{ IMPLICIT_OTHER | IMPLICIT_SEARCH }
 implicit_singletons = { (print ~ export?) | (export ~ print?) }
 export = { (output | append | overwrite) }
-IMPLICIT_OTHER = _{ filter | setting | invocation }
+IMPLICIT_OTHER = _{ filter | opt | invocation }
 IMPLICIT_SEARCH = _{ search ~ SEARCH_EXPLICIT_TERMINATOR? }
 filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
 
@@ -104,16 +104,15 @@ exit = { SINGLETON ~ ^"exit" }
 help = { SINGLETON ~ ^"help" ~ topic? }
 history = { SINGLETON ~ ^"review" ~ history_args? }
 
-topic = ${ (HASHTAG | SINGLETON)? ~ (root_topics | group_topics) }
+topic = ${ SINGLETON? ~ (root_topics | group_topics) }
 expand = { SINGLETON ~ ^"expand" ~ (label | historic) }
 delete = { SINGLETON ~ ^"delete" ~ (label | historic) }
 absorb = { SINGLETON ~ ^"absorb" ~ (label | historic) }
-version = { SINGLETON ~ ^"version" }
-reset = { SINGLETON ~ ^"reset" }
 initialize = { SINGLETON ~ ^"initialize" ~ ^"history" }
-get = { SINGLETON ~ ^"get" ~ var? }
-clear = { SINGLETON ~ ^"clear" ~ var? }
+get = { SINGLETON ~ ^"get" ~ (var | VERSION | ALL)? }
+clear = { SINGLETON ~ ^"clear" ~ (var | ALL) }
 var = { span_key | lexicon_key | display_key | match_key | format_key }
+set = { span_set | lexicon_set | display_set | match_set | format_set }
 
 search = { ordered | unordered }   // quoted-searches are ordered // unquoted-searches are unordered
 
@@ -125,16 +124,16 @@ anchored = { fragment } // Segments have one or more unquoted (unordered) fragme
 control_suffix = ${ ^"::current" }     // seems to be bug in pest crate iff this is named "settings_option" instead of "control_suffix"
 span_key = @{ ^"span" }
 SPAN_VAR = _{ span_key }
+span_set = { SET ~ SPAN_VAR ~ SETTING ~ span_option }
 span_var = { VAR ~ SPAN_VAR ~ SETTING ~ span_option }
-span_set = { VAR ~ SPAN_VAR ~ EQUALS ~ span_option }
-span_option = { DIGIT_le3 | span_verse | default }
+span_option = { DIGIT_le3 | span_verse }
 span_verse = ${ ^"verse" }
 
 lexicon_key = @{ ^"lexicon" }
 LEXICON_VAR = _{ lexicon_key }
+lexicon_set = { SET ~ LEXICON_VAR ~ SETTING ~ lexicon_option }
 lexicon_var = { VAR ~ LEXICON_VAR ~ SETTING ~ lexicon_option }
-lexicon_set = { VAR ~ LEXICON_VAR ~ EQUALS ~ lexicon_option }
-lexicon_option = { LEXICONS | default }
+lexicon_option = { LEXICONS }
 LEXICONS = _{ av | avx | dual }  // very specific domain for the AVX driver/parser implementation
 avx = { ^"modern" | "^avx" }
 av = { ^"kjv" | ^"av" }
@@ -142,15 +141,15 @@ dual = { ^"dual" | ^"both" }
 
 display_key = @{ ^"display" }
 DISPLAY_VAR = _{ display_key }
+display_set = { SET ~ DISPLAY_VAR ~ SETTING ~ display_option }
 display_var = { VAR ~ DISPLAY_VAR ~ SETTING ~ display_option }
-display_set = { VAR ~ DISPLAY_VAR ~ EQUALS ~ display_option }
-display_option = { DISPLAYS | default }
+display_option = { DISPLAYS }
 DISPLAYS = _{ av | avx }  // very specific domain for the AVX driver/parser implementation
 
 match_key = @{ ^"similarity" }
 MATCH_VAR = _{ match_key }
+match_set = { SET ~ MATCH_VAR ~ SETTING ~ match_option }
 match_var = { VAR ~ MATCH_VAR ~ SETTING ~ match_option }
-match_set = { VAR ~ MATCH_VAR ~ EQUALS ~ match_option }
 match_option =${ ((FUZZY | PRECISE) ~ enable_lemma_match) | EXACT }
 PRECISE = ${ ^"precise" ~ "100" }
 EXACT = ${ ^"exact" ~ "0" }
@@ -160,9 +159,9 @@ FUZZY = ${ ( (('4' .. '9') ~ ('0' .. '9')) | ('1' .. '9') ) | THIRTY_SOMETHING }
 
 format_key = @{ ^"format" }
 FORMAT_VAR = _{ format_key }
+format_set = { SINGLETON ~ FORMAT_VAR ~ SETTING ~ format_option }
 format_var = { VAR ~ FORMAT_VAR ~ SETTING ~ format_option }
-format_set = { VAR ~ FORMAT_VAR ~ EQUALS ~ format_option }
-format_option = { html | markdown | textual | json | default }
+format_option = { html | markdown | textual | json }
 html = ${ ^"html" }
 markdown = ${ ^"markdown" | ^"md" }
 textual = ${ ^"text" }
@@ -175,7 +174,7 @@ chapter = { COLON ~ DIGIT_byte }
 bookName = { ALPHA+ | (onetwothree ~ ALPHA+) }
 onetwothree = { ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
-setting = { span_var | span_set | lexicon_var | lexicon_set | display_var | display_set | match_var | match_set | format_var | format_set }
+opt = { span_var | lexicon_var | display_var | match_var | format_var }
 apply = { "||" ~ label} // macro is a Rust keyword and cannot be used in here
 label = ${ ('a' .. 'z' | 'A' .. 'Z') ~ (('a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | "-" | "_")+)? }
 historic = ${ ('1' .. '9') ~ ( '0' .. '9')* }
@@ -206,6 +205,7 @@ TOPIC_FILTER = @{ ^"FILTER" } // 2
 // CONTROL
 TOPIC_SET = @{ ^"SET" } // 3
 TOPIC_CLEAR = @{ ^"CLEAR" } // 4
+TOPIC_OPTION = @{ ^"CLEAR" } // NEW
 TOPIC_GET = @{ ^"GET" } // 5
 TOPIC_RESET = @{ ^"RESET" } // 6
 TOPIC_ABSORB = @{ ^"ABSORB" } // 7
@@ -223,7 +223,7 @@ TOPIC_DELETE = @{ ^"DELETE" } // 10
 TOPIC_EXPAND = @{ ^"EXPAND" } // 11
 TOPIC_REVIEW = @{ ^"REVIEW" } // 16
 TOPIC_INIT = @{ ^"INITIALIZE" } // 17 **
-root_topics = { TOPIC_FIND | TOPIC_FILTER | TOPIC_SET | TOPIC_CLEAR | TOPIC_GET | TOPIC_RESET | TOPIC_ABSORB | TOPIC_LIMIT | TOPIC_EXPORT | TOPIC_HELP | TOPIC_VERSION | TOPIC_EXIT | TOPIC_INVOKE | TOPIC_APPLY | TOPIC_DELETE | TOPIC_EXPAND | TOPIC_REVIEW | TOPIC_INIT }
+root_topics = { TOPIC_FIND | TOPIC_FILTER | TOPIC_SET | TOPIC_CLEAR | TOPIC_OPTION | TOPIC_GET | TOPIC_RESET | TOPIC_ABSORB | TOPIC_LIMIT | TOPIC_EXPORT | TOPIC_HELP | TOPIC_VERSION | TOPIC_EXIT | TOPIC_INVOKE | TOPIC_APPLY | TOPIC_DELETE | TOPIC_EXPAND | TOPIC_REVIEW | TOPIC_INIT }
 
 GROUP_TOPIC_SEARCH = @{ ^"SEARCH" }
 GROUP_TOPIC_CONTROL = @{ ^"CONTROL" | ^"SETTINGS" }
@@ -496,9 +496,11 @@ HEX16 = ${ HEX ~ HEX ~ HEX ~ HEX }
 HEX32 = ${ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX }
 ALPHA = _{ 'a' .. 'z' | 'A' .. 'Z' }
 AND = _{ "&" }
+
+ALL = _{ ^"all" }
+VERSION = _{ ^"version" }
 OR = _{ "|" }
 SEARCH_EXPLICIT_TERMINATOR = _{ "+" | ";" }
-EQUALS = _{ ":=" }
 OPEN_BRACE = _{ "[" }
 CLOSE_BRACE = _{ "]" }
 DOLLAR = _{ "$" }
@@ -508,8 +510,8 @@ COLON = _{ ":" }
 SETTING = _{ "=" }
 SPACE = _{ " " }
 VAR = _{ "%" }
+SET = _{ SINGLETON ~ set_command?}
+set_command = ${ ^"set" }
 SINGLETON = _{ "@" }
-HASHTAG = _{ "@" }
-default = ${ ^"default" }
 not = { "-" }
 

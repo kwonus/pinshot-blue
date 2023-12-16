@@ -33,7 +33,7 @@ fn unordered_compound_statement() {
 }
 #[test]
 fn assert_correct_version() {
-    let v :u16 = 0x4101;
+    let v :u16 = 0x3C15;
     let result = assert_grammar_revision_internal(2, 0, v);
     assert_eq!(result, v);
 }
