@@ -5,27 +5,27 @@
 // Short summary:
 // command has multiple clauses and optional export/scope/macro support
 // each clause is a standalone unit.  Search-Clauses have more granular units/syntax
-// search-clause contains [>= 1] segments
-// segments contain [>= 1] fragments
+// search-segment contains zero or one expression and/or any number of assignments
+// expression contains [>= 1] fragments
 // fragments contain [>= 1] features
 // fragments are used to match terms (i.e. word tokens) across the corpus being searched; match logic should consider all features of the fragment/token when deeming it to be matched
 //
 
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
-statement = { singleton | macro_vector | vector | avx_rev }
+statement = { avx_rev | singleton | implicits }
+implicits = { macro_segment | (segment ~ additional_segment* ~ implicit_singletons*) }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "2.0.3.C15" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.0.3.C17" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
-invocation = ${ invoke ~ control_suffix? }
-macro_vector = { IMPLICIT+ ~ apply }
-vector = { (IMPLICIT+) ~ implicit_singletons? }
+macro_segment = { segment ~ (apply_macro_full | apply_macro_part) }
+segment = { variable* ~ expression? ~ variable* }
+expression = { search | invoke_full }
+variable = { opt | invoke_partial | filter }
 singleton = { exit | help | history | expand | delete | absorb | get | set | clear | initialize }
 
-IMPLICIT = _{ IMPLICIT_OTHER | IMPLICIT_SEARCH }
 implicit_singletons = { (print ~ export?) | (export ~ print?) }
 export = { (output | append | overwrite) }
-IMPLICIT_OTHER = _{ filter | opt | invocation }
-IMPLICIT_SEARCH = _{ search ~ SEARCH_EXPLICIT_TERMINATOR? }
+additional_segment = { SEARCH_EXPLICIT_BOUNDARY ~ segment }
 filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
 
 item = { (text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | wildcard | punc | decoration | delta ) }
@@ -115,13 +115,11 @@ var = { span_key | lexicon_key | display_key | match_key | format_key }
 set = { span_set | lexicon_set | display_set | match_set | format_set }
 
 search = { ordered | unordered }   // quoted-searches are ordered // unquoted-searches are unordered
-
-unordered = { fragment+ } // Unordered segment
-ordered = { QUOTE ~ anchored ~ (anchored ~ unanchored)* ~ QUOTE } // Quoted/Ordered segment
+unordered = { fragment+ } // Unordered expression
+ordered = { QUOTE ~ anchored ~ (anchored ~ unanchored)* ~ QUOTE } // Quoted/Ordered expression
 unanchored = { ellipsis ~ fragment }
 anchored = { fragment } // Segments have one or more unquoted (unordered) fragments <xor> have one or more quoted (ordered) fragments // Fragments are anded .... ALL MUST MATCH
 
-control_suffix = ${ ^"::current" }     // seems to be bug in pest crate iff this is named "settings_option" instead of "control_suffix"
 span_key = @{ ^"span" }
 SPAN_VAR = _{ span_key }
 span_set = { SET ~ SPAN_VAR ~ SETTING ~ span_option }
@@ -134,7 +132,7 @@ LEXICON_VAR = _{ lexicon_key }
 lexicon_set = { SET ~ LEXICON_VAR ~ SETTING ~ lexicon_option }
 lexicon_var = { VAR ~ LEXICON_VAR ~ SETTING ~ lexicon_option }
 lexicon_option = { LEXICONS }
-LEXICONS = _{ av | avx | dual }  // very specific domain for the AVX driver/parser implementation
+LEXICONS = _{ avx | av | dual }  // very specific domain for the AVX driver/parser implementation
 avx = { ^"modern" | "^avx" }
 av = { ^"kjv" | ^"av" }
 dual = { ^"dual" | ^"both" }
@@ -175,10 +173,17 @@ bookName = { ALPHA+ | (onetwothree ~ ALPHA+) }
 onetwothree = { ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
 opt = { span_var | lexicon_var | display_var | match_var | format_var }
-apply = { "||" ~ label} // macro is a Rust keyword and cannot be used in here
+apply_macro_part = { "||" ~ label_part} // macro is a Rust keyword and cannot be used in here as  PEG variable
+apply_macro_full =  { "||" ~ label_full} // macro is a Rust keyword and cannot be used in here as PEG variable
 label = ${ ('a' .. 'z' | 'A' .. 'Z') ~ (('a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | "-" | "_")+)? }
+label_any = ${ (POUND | DOLLAR) ~ label }
+label_full = ${ DOLLAR ~ label }
+label_part = ${ POUND ~ label }
 historic = ${ ('1' .. '9') ~ ( '0' .. '9')* }
-invoke = ${ DOLLAR ~ (label | historic) }
+defaults = ${ "0" }
+currents = ${ "*" }
+invoke_full = ${ DOLLAR ~ (label | historic | defaults | currents) }
+invoke_partial = ${ POUND ~ (label | historic | defaults | currents) }
 
 decoration = { italics | jesus }
 pos32 = ${ "#" ~ HEX32 }
@@ -500,17 +505,18 @@ AND = _{ "&" }
 ALL = _{ ^"all" }
 VERSION = _{ ^"version" }
 OR = _{ "|" }
-SEARCH_EXPLICIT_TERMINATOR = _{ "+" | ";" }
+SEARCH_EXPLICIT_BOUNDARY = _{ "+" }
 OPEN_BRACE = _{ "[" }
 CLOSE_BRACE = _{ "]" }
 DOLLAR = _{ "$" }
+POUND = _{ "#" }
 FILTER_OP = _{ "<" }
 QUOTE = _{ "\"" }
 COLON = _{ ":" }
 SETTING = _{ "=" }
 SPACE = _{ " " }
 VAR = _{ "%" }
-SET = _{ SINGLETON ~ set_command?}
+SET = _{ SINGLETON ~ set_command? ~ VAR }
 set_command = ${ ^"set" }
 SINGLETON = _{ "@" }
 not = { "-" }
