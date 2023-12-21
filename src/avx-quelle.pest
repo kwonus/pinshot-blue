@@ -13,19 +13,17 @@
 
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | implicits }
-implicits = { segments ~ implicit_singletons* }
+implicits = { segment ~ additional_segment* }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "2.0.3.C19" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.0.3.C21" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
-segments = { segment ~ additional_segment* } // this creates a child arrayt of segments
 segment = { elements ~ macro_suffix? }
 elements = { element* ~ expression? ~ element* }
 macro_suffix = _{ apply_macro_full | apply_macro_part }
 expression = { search | invoke_full }
 element = { var_opt | invoke_partial | filter }
-singleton = { exit | help | history | expand | delete | absorb | get | set | clear | initialize }
+singleton = { exit | help | history | review | delete | absorb | get | set | clear | initialize | print }
 
-implicit_singletons = _{ (print ~ export?) | (export ~ print?) }
 export = { (output | append | overwrite) }
 additional_segment = _{ SEARCH_EXPLICIT_BOUNDARY ~ segment }
 filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
@@ -102,12 +100,13 @@ punc = { punc_any | punc_question | punc_declare | punc_dash | punc_semi | punc_
 italics = { ^"/italics/" }
 jesus = { ^"/Jesus/" }
 
+print = { SINGLETON ~ ^"print" ~ export? }
 exit = { SINGLETON ~ ^"exit" }
 help = { SINGLETON ~ ^"help" ~ topic? }
-history = { SINGLETON ~ ^"review" ~ history_args? }
 
 topic = ${ SINGLETON? ~ (root_topics | group_topics) }
-expand = { SINGLETON ~ ^"expand" ~ (label_any | historic_any) }
+review = { SINGLETON ~ ^"review" ~ (label_any | range)? }
+history = { SINGLETON ~ ^"history" ~ (historic_any | history_args)? }
 delete = { SINGLETON ~ ^"delete" ~ (label_any | historic_any) }
 absorb = { SINGLETON ~ ^"absorb" ~ (label_any | historic_any) }
 initialize = { SINGLETON ~ ^"initialize" ~ ^"history" }
@@ -173,7 +172,6 @@ markdown = ${ ^"markdown" | ^"md" }
 textual = ${ ^"text" }
 json = ${ ^"json" }
 
-print = { OPEN_BRACE ~ (DIGITS)* ~ CLOSE_BRACE }
 book = { (bookName | bookNum)}
 verse = { chapter ~ COLON ~ DIGIT_byte }
 chapter = { COLON ~ DIGIT_byte }
@@ -196,6 +194,7 @@ historic_part = ${ POUND ~ id }
 id = ${ ('1' .. '9') ~ ( '0' .. '9')* }
 defaults = ${ POUND ~ "0" }
 currents = ${ POUND ~ "*" }
+current = ${ DOLLAR ~ "*" }
 
 decoration = { italics | jesus }
 pos32 = ${ "#" ~ HEX32 }
@@ -222,12 +221,12 @@ TOPIC_FILTER = @{ ^"FILTER" } // 2
 // CONTROL
 TOPIC_SET = @{ ^"SET" } // 3
 TOPIC_CLEAR = @{ ^"CLEAR" } // 4
-TOPIC_OPTION = @{ ^"CLEAR" } // NEW
+TOPIC_OPTION = @{ ^"OPTION" } // NEW
 TOPIC_GET = @{ ^"GET" } // 5
 TOPIC_RESET = @{ ^"RESET" } // 6
 TOPIC_ABSORB = @{ ^"ABSORB" } // 7
 //OUTPUT
-TOPIC_LIMIT = @{ ^"LIMIT" | ^"SHOW" } // 8 // show is deprecated verb for limit
+TOPIC_PRINT = @{ ^"PRINT" } // 8
 TOPIC_EXPORT = @{ ^"EXPORT" } // 9
 // SYSTEM
 TOPIC_HELP = @{ ^"HELP" } // 10
@@ -237,10 +236,9 @@ TOPIC_EXIT = @{ ^"EXIT" } // 12
 TOPIC_INVOKE = @{ ^"INVOKE" } // 13
 TOPIC_APPLY = @{ ^"APPLY" }   // 14
 TOPIC_DELETE = @{ ^"DELETE" } // 10
-TOPIC_EXPAND = @{ ^"EXPAND" } // 11
 TOPIC_REVIEW = @{ ^"REVIEW" } // 16
 TOPIC_INIT = @{ ^"INITIALIZE" } // 17 **
-root_topics = { TOPIC_FIND | TOPIC_FILTER | TOPIC_SET | TOPIC_CLEAR | TOPIC_OPTION | TOPIC_GET | TOPIC_RESET | TOPIC_ABSORB | TOPIC_LIMIT | TOPIC_EXPORT | TOPIC_HELP | TOPIC_VERSION | TOPIC_EXIT | TOPIC_INVOKE | TOPIC_APPLY | TOPIC_DELETE | TOPIC_EXPAND | TOPIC_REVIEW | TOPIC_INIT }
+root_topics = { TOPIC_FIND | TOPIC_FILTER | TOPIC_SET | TOPIC_CLEAR | TOPIC_OPTION | TOPIC_GET | TOPIC_RESET | TOPIC_ABSORB | TOPIC_PRINT | TOPIC_EXPORT | TOPIC_HELP | TOPIC_VERSION | TOPIC_EXIT | TOPIC_INVOKE | TOPIC_APPLY | TOPIC_DELETE | TOPIC_REVIEW | TOPIC_INIT }
 
 GROUP_TOPIC_SEARCH = @{ ^"SEARCH" }
 GROUP_TOPIC_CONTROL = @{ ^"CONTROL" | ^"SETTINGS" }
@@ -495,10 +493,10 @@ nupos = {
 text = ${ ALPHA+ }
 enable_lemma_match = { "!" }
 
-history_args = { (history_range ~ history_max?) | (history_max ~ history_range?) }
-history_since = { ^"since" ~ history_date }
-history_until = { ^"until" ~ history_date }
-history_range = { (history_since ~ history_until?) | (history_until ~ history_since?) }
+history_args = { (range ~ history_max?) | (history_max ~ range?) }
+since = { ^"since" ~ history_date }
+until = { ^"until" ~ history_date }
+range = { (since ~ until?) | (until ~ since?) }
 history_max = { DIGITS }
 history_date = ${ "20" ~ DIGIT ~ DIGIT ~ "/" ~ DIGIT ~ DIGIT ~ "/" ~ DIGIT ~ DIGIT }
 
