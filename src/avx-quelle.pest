@@ -15,14 +15,14 @@ WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | implicits }
 implicits = { segment ~ additional_segment* }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "2.0.3.C21" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.3.C23" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 segment = { elements ~ macro_suffix? }
 elements = { element* ~ expression? ~ element* }
 macro_suffix = _{ apply_macro_full | apply_macro_part }
 expression = { search | invoke_full }
 element = { var_opt | invoke_partial | filter }
-singleton = { exit | help | history | review | delete | absorb | get | set | clear | initialize | print }
+singleton = { exit | help | history_reset | history | review | delete | absorb | get | set | clear | print }
 
 export = { (output | append | overwrite) }
 additional_segment = _{ SEARCH_EXPLICIT_BOUNDARY ~ segment }
@@ -105,11 +105,12 @@ exit = { SINGLETON ~ ^"exit" }
 help = { SINGLETON ~ ^"help" ~ topic? }
 
 topic = ${ SINGLETON? ~ (root_topics | group_topics) }
-review = { SINGLETON ~ ^"review" ~ (label_any | range)? }
-history = { SINGLETON ~ ^"history" ~ (historic_any | history_args)? }
+review = { SINGLETON ~ ^"review" ~ (date_range? ~ label_parameter* ~ date_range?) }
+
+history_reset = { SINGLETON ~ ^"history" ~ "-reset" ~  range? }
+history = { SINGLETON ~ ^"history" ~ (date_range? ~ historic_parameter* ~ date_range?) }
 delete = { SINGLETON ~ ^"delete" ~ (label_any | historic_any) }
 absorb = { SINGLETON ~ ^"absorb" ~ (label_any | historic_any) }
-initialize = { SINGLETON ~ ^"initialize" ~ ^"history" }
 get = { SINGLETON ~ ^"get" ~ get_opt? }
 clear = { SINGLETON ~ ^"clear" ~ (var | ALL) }
 var = { span_key | lexicon_key | display_key | match_key | format_key }
@@ -185,9 +186,12 @@ apply_macro_full =  { "||" ~ label_full} // macro is a Rust keyword and cannot b
 
 invoke_full = ${ label_full | historic_full }
 invoke_partial = ${ label_part | historic_part | defaults | currents }
+label_parameter = _{ label_any | wildcard }
 label_any = ${ (POUND | DOLLAR) ~ label }
 label_full = ${ DOLLAR ~ label }
 label_part = ${ POUND ~ label }
+historic_parameter = _{ historic_sequence | historic_any | range }
+historic_sequence = ${ id ~ HYPHEN ~ id }
 historic_any = ${ (POUND | DOLLAR) ~ id }
 historic_full = ${ DOLLAR ~ id }
 historic_part = ${ POUND ~ id }
@@ -203,7 +207,12 @@ greek = ${ DIGITS ~ ^":G" }
 hebrew = ${ DIGITS ~ ^":H" }
 
 lemma = { "\\" ~ text ~ "\\" }
-wildcard = ${ text? ~ "*" ~ text? }
+
+wildcard = ${ ((term_begin | STAR) ~ term_contains ~ (STAR ~ term_contains)* ~ (term_end | STAR)) | term_begin_and_end | term_begin | term_end }
+term_end = ${ STAR ~ text }
+term_begin = ${ text ~ STAR }
+term_begin_and_end = ${ text ~ STAR ~ text }
+
 ellipsis = _{ "..." }
 
 append = { ">>" ~  filename }
@@ -490,15 +499,19 @@ nupos = {
 	^"#xx" |
 	^"#zz" }
 
-text = ${ ALPHA+ }
 enable_lemma_match = { "!" }
 
-history_args = { (range ~ history_max?) | (history_max ~ range?) }
-since = { ^"since" ~ history_date }
-until = { ^"until" ~ history_date }
-range = { (since ~ until?) | (until ~ since?) }
+range = _{ date_range | historic_sequence }
+date_range = _{ (date_gt ~ date_lt?) | (date_lt ~ date_gt?) }
+historic_range = _{ (id_gt ~ id_lt?) | (id_lt ~ id_gt?) }
 history_max = { DIGITS }
-history_date = ${ "20" ~ DIGIT ~ DIGIT ~ "/" ~ DIGIT ~ DIGIT ~ "/" ~ DIGIT ~ DIGIT }
+history_date = ${ "20" ~ DIGIT ~ DIGIT ~ "/" ~ DIGIT ~ DIGIT? ~ "/" ~ DIGIT ~ DIGIT? }
+date_gt = { ">" ~ history_date }
+date_lt = { "<" ~ history_date }
+id_gt = { ">" ~ id }
+id_lt = { "<" ~ id }
+reset_less_than = _{ id_lt | date_lt }
+reset_greater_than = _{ id_gt | date_gt }
 
 DIGIT = _{ '0' .. '9' }
 HEX = _{ DIGIT | ('a' .. 'f') | ('A' .. 'F') }
@@ -509,7 +522,6 @@ DIGIT_le3 = ${DIGIT ~ DIGIT ~ DIGIT? }
 DIGIT_byte = ${ (("0" | "1" | "2") ~ DIGIT ~ DIGIT) | (DIGIT ~ DIGIT?) }
 HEX16 = ${ HEX ~ HEX ~ HEX ~ HEX }
 HEX32 = ${ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX }
-ALPHA = _{ 'a' .. 'z' | 'A' .. 'Z' }
 AND = _{ "&" }
 
 label = ${ LABEL_CHAR* }
@@ -529,10 +541,15 @@ FILTER_OP = _{ "<" }
 QUOTE = _{ "\"" }
 COLON = _{ ":" }
 ASSIGN = _{ "=" }
+STAR = _{ "*" }
 SPACE = _{ " " }
 VAR = _{ "%" }
 SET = _{ SINGLETON ~ set_command? ~ VAR }
 set_command = ${ ^"set" }
 SINGLETON = _{ "@" }
 not = { "-" }
+
+term_contains = $ { text }
+text = ${ ALPHA+ }
+ALPHA = _{ 'a' .. 'z' | 'A' .. 'Z' }
 

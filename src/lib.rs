@@ -196,7 +196,7 @@ pub extern "C" fn delete_quelle_parse(c_lent: *mut c_char) -> bool {
     };
 }
 
-pub fn assert_grammar_revision_internal(major: u8, minor: u8, ymdd: u16) -> u16 {  // "2.0.Y.MDD" ... 3B21 would be 2.0.3.B21
+pub fn assert_grammar_revision_internal(major: u8, ymdd: u16) -> u16 {  // "2.Y.MDD" ... 3B21 would be 2.3.B21
 
     let y  = (ymdd & 0xF000) >> 12;
     let m  = (ymdd & 0x0F00) >>  8;
@@ -204,7 +204,7 @@ pub fn assert_grammar_revision_internal(major: u8, minor: u8, ymdd: u16) -> u16 
     let d2 =  ymdd & 0x000F;         // days are not truly hex in this encoding ... dd is 01, 02, 03, ... , 31 || all hex numbers excluded e.g. 0x31 means decimal 31 in this encoding
 
     let mut decimal = itoa::Buffer::new();
-    let mut version = "_AVX_REV_ =? ".to_owned() + decimal.format(major) + "." + decimal.format(minor) + "." + decimal.format(y) + ".";
+    let mut version = "_AVX_REV_ =? ".to_owned() + decimal.format(major) + "." + decimal.format(y) + ".";
 
     if m > 12 {
         version.push_str("X");
@@ -236,13 +236,13 @@ pub fn assert_grammar_revision_internal(major: u8, minor: u8, ymdd: u16) -> u16 
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn assert_grammar_revision(ymdd: u16) -> u16 {  // "2.0.3.711" == 203_0711
-    return assert_grammar_revision_internal(2, 0, ymdd);
+pub unsafe extern "C" fn assert_grammar_revision(ymdd: u16) -> u16 {
+    return assert_grammar_revision_internal(2, ymdd);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn get_library_revision() -> u16 {
-    return 0x3C21;
+    return 0x3C23;
 }
 
 fn recurse(children: Pairs<Rule>, items: &mut Vec<Parsed>)

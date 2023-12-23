@@ -34,13 +34,13 @@ fn unordered_compound_statement() {
 #[test]
 fn assert_correct_version() {
     let v :u16 = 0x3C17;
-    let result = assert_grammar_revision_internal(2, 0, v);
+    let result = assert_grammar_revision_internal(2, v);
     assert_eq!(result, v);
 }
 #[test]
 fn assert_incorrect_version() {
     let v :u16 = 0x3B02;
-    let result = assert_grammar_revision_internal(2, 0, v);
+    let result = assert_grammar_revision_internal(2, v);
     assert_eq!(result, 0);
 }
 /*
