@@ -28,7 +28,7 @@ export = { (output | append | overwrite) }
 additional_segment = _{ SEARCH_EXPLICIT_BOUNDARY ~ segment }
 filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
 
-item = { (text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | wildcard | punc | decoration | delta ) }
+item = { (wildcard | text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | punc | decoration | delta ) }
 fragment = { feature_option ~ (AND ~ feature_option)* }
 feature_option = { feature ~ (OR ~ feature)* }
 feature = { not? ~ item}
@@ -208,10 +208,7 @@ hebrew = ${ DIGITS ~ ^":H" }
 
 lemma = { "\\" ~ text ~ "\\" }
 
-wildcard = ${ ((term_begin | STAR) ~ term_contains ~ (STAR ~ term_contains)* ~ (term_end | STAR)) | term_begin_and_end | term_begin | term_end }
-term_end = ${ STAR ~ text }
-term_begin = ${ text ~ STAR }
-term_begin_and_end = ${ text ~ STAR ~ text }
+wildcard = ${ (term_begin | STAR) ~ term_contains* ~ term_end? }
 
 ellipsis = _{ "..." }
 
@@ -549,7 +546,9 @@ set_command = ${ ^"set" }
 SINGLETON = _{ "@" }
 not = { "-" }
 
-term_contains = $ { text }
+term_contains = $ { text ~ STAR }
+term_end = ${ text }
+term_begin = ${ text ~ STAR }
 text = ${ ALPHA+ }
 ALPHA = _{ 'a' .. 'z' | 'A' .. 'Z' }
 
