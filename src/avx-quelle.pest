@@ -15,7 +15,7 @@ WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | implicits }
 implicits = { segment ~ additional_segment* }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "2.3.C23" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.3.C27" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 segment = { elements ~ macro_suffix? }
 elements = { element* ~ expression? ~ element* }
@@ -26,7 +26,7 @@ singleton = { exit | help | history_reset | history | review | delete | absorb |
 
 export = { (output | append | overwrite) }
 additional_segment = _{ SEARCH_EXPLICIT_BOUNDARY ~ segment }
-filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse | chapter)? }
+filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse_range | chapter_range | verse | chapter)? }
 
 item = { (wildcard | text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | punc | decoration | delta ) }
 fragment = { feature_option ~ (AND ~ feature_option)* }
@@ -173,10 +173,12 @@ markdown = ${ ^"markdown" | ^"md" }
 textual = ${ ^"text" }
 json = ${ ^"json" }
 
-book = { (bookName | bookNum)}
-verse = { chapter ~ COLON ~ DIGIT_byte }
-chapter = { COLON ~ DIGIT_byte }
-bookName = { ALPHA+ | (onetwothree ~ ALPHA+) }
+book = { (bookName | bookNum) }
+verse = ${ chapter ~ COLON ~ DIGIT_byte }
+verse_range = ${ COLON ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
+chapter = ${ COLON ~ DIGIT_byte }
+chapter_range = ${ COLON ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
+bookName = ${ ALPHA+ | (onetwothree ~ ALPHA+) }
 onetwothree = { ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
 var_opt = { span_var | lexicon_var | display_var | match_var | format_var }
