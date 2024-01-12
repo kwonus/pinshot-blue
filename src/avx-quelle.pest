@@ -15,7 +15,7 @@ WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | implicits }
 implicits = { segment ~ additional_segment* }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "2.3.C27" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.4.111" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 segment = { elements ~ macro_suffix? }
 elements = { element* ~ expression? ~ element* }
@@ -167,11 +167,12 @@ FORMAT_VAR = _{ format_key }
 format_set = { SET ~ FORMAT_VAR ~ ASSIGN ~ format_option }
 format_var = { VAR ~ FORMAT_VAR ~ ASSIGN ~ format_option }
 format_get = { VAR ~ FORMAT_VAR }
-format_option = { html | markdown | textual | json }
+format_option = { html | markdown | textual | json | yaml }
 html = ${ ^"html" }
 markdown = ${ ^"markdown" | ^"md" }
-textual = ${ ^"text" }
+textual = ${ ^"text" | ^"utf8" }
 json = ${ ^"json" }
+yaml = ${ ^"yaml" }
 
 book = { (bookName | bookNum) }
 verse = ${ chapter ~ COLON ~ DIGIT_byte }
