@@ -177,7 +177,7 @@ FUZZY = ${ THIRTY_SOMETHING | FORTY_PLUS } // legal thresholds are from 33 to 99
 
 format_key = @{ ^"format" }
 FORMAT_VAR = _{ format_key }
-format_set = { SET ~ FORMAT_VAR ~ ASSIGN ~ format_option }
+format_set = { (SET | SINGLETON) ~ FORMAT_VAR ~ ASSIGN ~ format_option }
 format_var = { VAR ~ FORMAT_VAR ~ ASSIGN ~ format_option }
 format_get = { VAR ~ FORMAT_VAR }
 format_option = { html | markdown | textual | json | yaml }
