@@ -15,7 +15,7 @@ WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | implicits }
 implicits = { segment ~ additional_segment* }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "2.4.212" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.4.220" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 segment = { elements ~ macro_suffix? }
 elements = { element* ~ expression? ~ element* }
@@ -149,10 +149,14 @@ DUAL = ${ ^"dual" | ^"both" }
 
 display_key = @{ ^"display" }
 DISPLAY_VAR = _{ display_key }
-display_set = { (SET | SINGLETON) ~ DISPLAY_VAR ~ ASSIGN ~ display_option }
-display_var = { VAR ~ DISPLAY_VAR ~ ASSIGN ~ display_option }
+// As of 2.4.220 grammar, display and lexicon options are identical (for display, both means side-by-side)
+// old/2.4.212 grammar is commented ot out below:
+//display_set = { (SET | SINGLETON) ~ DISPLAY_VAR ~ ASSIGN ~ display_option }
+//display_var = { VAR ~ DISPLAY_VAR ~ ASSIGN ~ display_option }
+display_set = { (SET | SINGLETON) ~ DISPLAY_VAR ~ ASSIGN ~ lexicon_option }
+display_var = { VAR ~ DISPLAY_VAR ~ ASSIGN ~ lexicon_option }
 display_get = { VAR ~ DISPLAY_VAR }
-display_option = _{ DISPLAYS }
+//display_option = _{ DISPLAYS }
 DISPLAYS = _{ AV | AVX }  // very specific domain for the AVX driver/parser implementation
 
 match_key = @{ ^"similarity" }
