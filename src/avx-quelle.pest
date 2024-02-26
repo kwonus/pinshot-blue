@@ -15,14 +15,14 @@ WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | implicits }
 implicits = { segment ~ additional_segment* }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "2.4.220" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "2.4.225" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 segment = { elements ~ macro_suffix? }
 elements = { element* ~ expression? ~ element* }
 macro_suffix = _{ apply_macro_full | apply_macro_part }
-expression = { search | invoke_full }
-element = { var_opt | invoke_partial | filter }
-singleton = { exit | help | history_reset | history | review | delete | absorb | get | set | clear | print }
+expression = { search | utilization_full }
+element = { var_opt | utilization_partial | filter }
+singleton = { exit | help | history | review | delete | absorb | get | set | clear | print | invoke_explicit }
 
 export = { (output | append | overwrite) }
 additional_segment = _{ SEARCH_EXPLICIT_BOUNDARY ~ segment }
@@ -112,12 +112,16 @@ exit = { SINGLETON ~ ^"exit" }
 help = { SINGLETON ~ ^"help" ~ topic? }
 
 topic = ${ SINGLETON? ~ (root_topics | group_topics) }
-review = { SINGLETON ~ ^"review" ~ (date_range? ~ label_parameter* ~ date_range?) }
-
-history_reset = { SINGLETON ~ ^"history" ~ "-reset" ~  range? }
-history = { SINGLETON ~ ^"history" ~ (date_range? ~ historic_parameter* ~ date_range?) }
-delete = { SINGLETON ~ ^"delete" ~ (label_any | historic_any) }
-absorb = { SINGLETON ~ ^"absorb" ~ (label_any | historic_any) }
+reset = { SINGLETON ~ delete_keyword ~ review_flag_history ~ any_range }
+delete = { SINGLETON ~ delete_keyword ~ (label | (review_flag_labels ~ ((wildcard ~ date_range*) | date_range ~ wildcard*)) ) }
+delete_keyword = _{ ^"review" }
+review = { SINGLETON ~ review_keyword ~ (label | (review_flag_labels ~ ((wildcard ~ date_range*) | date_range ~ wildcard*))* ) }
+review_flag_labels = _ { ^"-labels" }
+history_full_reset = { "-all" }
+history = { SINGLETON ~ review_keyword ~ (id | (review_flag_history ~ any_range* ) ) }
+review_flag_history = _ { ^"-history" }
+review_keyword = _{ ^"review" }
+absorb = { SINGLETON ~ ^"absorb" ~ (label | id) }
 get = { SINGLETON ~ ^"get" ~ get_opt? }
 clear = { SINGLETON ~ ^"clear" ~ (var | ALL) }
 var = { span_key | lexicon_key | display_key | match_key | format_key }
@@ -201,20 +205,21 @@ onetwothree = { ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
 var_opt = { span_var | lexicon_var | display_var | match_var | format_var }
 get_opt = { span_get | lexicon_get | display_get | match_get | format_get | version_get | all_get }
-apply_macro_part = { "||" ~ label_part} // macro is a Rust keyword and cannot be used in here as  PEG variable
-apply_macro_full =  { "||" ~ label_full} // macro is a Rust keyword and cannot be used in here as PEG variable
+apply_macro_part = { "||" ~ label_part}
+apply_macro_full =  { "||" ~ label_full}
 
-invoke_full = ${ label_full | historic_full }
-invoke_partial = ${ label_part | historic_part | defaults | currents }
+utilization_full = ${ label_full | historic_full }
+utilization_partial = ${ label_part | historic_part | defaults | currents }
 label_parameter = _{ label_any | wildcard }
 label_any = ${ (POUND | DOLLAR) ~ label }
 label_full = ${ DOLLAR ~ label }
 label_part = ${ POUND ~ label }
-historic_parameter = _{ historic_sequence | historic_any | range }
+historic_parameter = _{ historic_sequence | historic_any | id_range }
 historic_sequence = ${ id ~ HYPHEN ~ id }
 historic_any = ${ (POUND | DOLLAR) ~ id }
 historic_full = ${ DOLLAR ~ id }
 historic_part = ${ POUND ~ id }
+invoke_explicit = ${ SINGLETON ~ id }
 id = ${ ('1' .. '9') ~ ( '0' .. '9')* }
 defaults = ${ POUND ~ "0" }
 currents = ${ POUND ~ "*" }
@@ -519,17 +524,15 @@ nupos = {
 LEMMA = ${ ^"lemma" }
 WORD = ${ ^"word" }
 
-range = _{ date_range | historic_sequence }
-date_range = _{ (date_gt ~ date_lt?) | (date_lt ~ date_gt?) }
-historic_range = _{ (id_gt ~ id_lt?) | (id_lt ~ id_gt?) }
-history_max = { DIGITS }
+any_range = _{ (id_range ~ date_range*) | (date_range ~ id_range*) }
+id_range = _{ (id_from | id_until) | (id_until | id_from) }
+id_from = { ^"from" ~ id }
+id_until = { ^"until" ~ id }
+
+date_range = _{ (date_from | date_until) | (date_until | date_from) }
+date_from = { ^"from" ~ history_date }
+date_until = { ^"until" ~ history_date }
 history_date = ${ "20" ~ DIGIT ~ DIGIT ~ "/" ~ DIGIT ~ DIGIT? ~ "/" ~ DIGIT ~ DIGIT? }
-date_gt = { ">" ~ history_date }
-date_lt = { "<" ~ history_date }
-id_gt = { ">" ~ id }
-id_lt = { "<" ~ id }
-reset_less_than = _{ id_lt | date_lt }
-reset_greater_than = _{ id_gt | date_gt }
 
 DIGIT = _{ '0' .. '9' }
 HEX = _{ DIGIT | ('a' .. 'f') | ('A' .. 'F') }
@@ -542,8 +545,9 @@ HEX16 = ${ HEX ~ HEX ~ HEX ~ HEX }
 HEX32 = ${ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX }
 AND = _{ "&" }
 
-label = ${ LABEL_CHAR* }
-LABEL_CHAR = _{ ( 'a' .. 'z' | 'A' .. 'Z' | DIGIT | "-" | "_") }
+label = ${ LABEL_FIRST_CHAR ~ LABEL_CHAR* }
+LABEL_CHAR = _{ (DIGIT | "-" | "_" | LABEL_FIRST_CHAR) }
+LABEL_FIRST_CHAR = _{ ( 'a' .. 'z' | 'A' .. 'Z') }
 
 ALL = _{ ^"all" }
 all_get = { VAR ~ ALL }
