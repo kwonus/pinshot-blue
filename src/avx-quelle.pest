@@ -15,14 +15,12 @@ WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | implicits }
 implicits = { segment ~ additional_segment* }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "2.4.225" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "4.3.03" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
-segment = { elements ~ macro_suffix? }
-elements = { element* ~ expression? ~ element* }
-macro_suffix = _{ apply_macro_full | apply_macro_part }
-expression = { search | utilization_full }
-element = { var_opt | utilization_partial | filter }
-singleton = { exit | help | history | review | delete | absorb | get | set | clear | print | invoke_explicit }
+segment = { elements? ~ filter* ~ apply_macro? }
+elements = _{ (expression ~ controls?) | (controls ~ expression?) }
+expression = { search | hashtag_label | hashtag_id }
+singleton = { exit | help | history | review | delete | absorb | get | set | clear | print | invoke_id }
 
 export = { (output | append | overwrite) }
 additional_segment = _{ SEARCH_EXPLICIT_BOUNDARY ~ segment }
@@ -114,7 +112,7 @@ help = { SINGLETON ~ ^"help" ~ topic? }
 topic = ${ SINGLETON? ~ (root_topics | group_topics) }
 reset = { SINGLETON ~ delete_keyword ~ review_flag_history ~ any_range }
 delete = { SINGLETON ~ delete_keyword ~ (label | (review_flag_labels ~ ((wildcard ~ date_range*) | date_range ~ wildcard*)) ) }
-delete_keyword = _{ ^"review" }
+delete_keyword = _{ ^"delete" }
 review = { SINGLETON ~ review_keyword ~ (label | (review_flag_labels ~ ((wildcard ~ date_range*) | date_range ~ wildcard*))* ) }
 review_flag_labels = _ { ^"-labels" }
 history_full_reset = { "-all" }
@@ -122,10 +120,10 @@ history = { SINGLETON ~ review_keyword ~ (id | (review_flag_history ~ any_range*
 review_flag_history = _ { ^"-history" }
 review_keyword = _{ ^"review" }
 absorb = { SINGLETON ~ ^"absorb" ~ (label | id) }
-get = { SINGLETON ~ ^"get" ~ get_opt? }
-clear = { SINGLETON ~ ^"clear" ~ (var | ALL) }
-var = { span_key | lexicon_key | display_key | match_key | format_key }
-set = { span_set | lexicon_set | display_set | match_set | format_set }
+clear = { SINGLETON ~ ^"clear" ~ (var | all_key) }
+var = { span_key | lexicon_key | lexicon_search_key | lexicon_render_key | match_key | match_lemma_key | match_word_key | format_key }
+set = { span_set | lexicon_set | lexicon_search_set | lexicon_render_set | match_set | match_lemma_set | match_word_set | format_set }
+get = { span_get | lexicon_get | lexicon_search_get | lexicon_render_get | match_get | match_lemma_get | match_word_get | format_get | version_get | all_get }
 
 search = { ordered | unordered }   // quoted-searches are ordered // unquoted-searches are unordered
 unordered = { fragment+ } // Unordered expression
@@ -134,60 +132,60 @@ unanchored = { ellipsis ~ fragment }
 
 span_key = @{ ^"span" }
 SPAN_VAR = _{ span_key }
-span_set = { (SET | SINGLETON) ~ SPAN_VAR ~ ASSIGN ~ span_option }
-span_var = { VAR ~ SPAN_VAR ~ ASSIGN ~ span_option }
-span_get = { VAR ~ SPAN_VAR }
+span_set = { (SET | SINGLETON) ~ SPAN_VAR ~ EQUALS ~ span_option }
+span_var = { SPAN_VAR ~ ASSIGN ~ span_option }
+span_get = { (GET | SINGLETON) ~ SPAN_VAR }
 span_option = _{ DIGIT_le3 | span_verse }
 span_verse = ${ ^"verse" }
 
 lexicon_key = @{ ^"lexicon" }
 LEXICON_VAR = _{ lexicon_key }
-lexicon_set = { (SET | SINGLETON) ~ LEXICON_VAR ~ ASSIGN ~ lexicon_option }
-lexicon_var = { VAR ~ LEXICON_VAR ~ ASSIGN ~ lexicon_option }
-lexicon_get = { VAR ~ LEXICON_VAR }
+lexicon_set = { (SET | SINGLETON) ~ LEXICON_VAR ~ EQUALS ~ lexicon_option }
+lexicon_var = { LEXICON_VAR ~ ASSIGN ~ lexicon_option }
+lexicon_get = { (GET | SINGLETON) ~ LEXICON_VAR }
+
+lexicon_search_set = { (SET | SINGLETON) ~ LEXICON_SEARCH_VAR ~ EQUALS ~ lexicon_option }
+lexicon_search_var = { LEXICON_SEARCH_VAR ~ ASSIGN ~ lexicon_option }
+lexicon_search_get = { (GET | SINGLETON) ~ LEXICON_SEARCH_VAR }
+
+lexicon_render_set = { (SET | SINGLETON) ~ LEXICON_RENDER_VAR ~ EQUALS ~ lexicon_option }
+lexicon_render_var = { LEXICON_RENDER_VAR ~ ASSIGN ~ lexicon_option }
+lexicon_render_get = { (GET | SINGLETON) ~ LEXICON_RENDER_VAR }
+
 lexicon_option = _{ LEXICONS }
 LEXICONS = _{ AVX | AV | DUAL }  // very specific domain for the AVX driver/parser implementation
 AVX = ${ ^"modern" | "^avx" }
 AV = ${ ^"kjv" | ^"av" }
 DUAL = ${ ^"dual" | ^"both" }
 
-display_key = @{ ^"display" }
-DISPLAY_VAR = _{ display_key }
-// As of 2.4.220 grammar, display and lexicon options are identical (for display, both means side-by-side)
-// old/2.4.212 grammar is commented ot out below:
-//display_set = { (SET | SINGLETON) ~ DISPLAY_VAR ~ ASSIGN ~ display_option }
-//display_var = { VAR ~ DISPLAY_VAR ~ ASSIGN ~ display_option }
-display_set = { (SET | SINGLETON) ~ DISPLAY_VAR ~ ASSIGN ~ lexicon_option }
-display_var = { VAR ~ DISPLAY_VAR ~ ASSIGN ~ lexicon_option }
-display_get = { VAR ~ DISPLAY_VAR }
-//display_option = _{ DISPLAYS }
-DISPLAYS = _{ AV | AVX }  // very specific domain for the AVX driver/parser implementation
-
 match_key = @{ ^"similarity" }
 MATCH_VAR = _{ match_key }
-match_set = { (SET | SINGLETON) ~ MATCH_VAR ~ ASSIGN ~ match_option }
-match_var = { VAR ~ MATCH_VAR ~ ASSIGN ~ match_option }
-match_get = { VAR ~ MATCH_VAR }
-match_option = _{ similarity_global_opt | similarity_named_opts }
-similarity_named_opts = _{ (similarity_word ~ similarity_lemma?) | (similarity_lemma ~ similarity_word?) }
-similarity_global_opt = _{ similarity_opt }
+match_set = { (SET | SINGLETON) ~ MATCH_VAR ~ EQUALS ~ similarity_opt }
+match_var = { MATCH_VAR ~ ASSIGN ~ similarity_opt }
+match_get = { (GET | SINGLETON) ~ MATCH_VAR }
 
-similarity_word = { WORD ~ COLON ~ similarity_opt }
-similarity_lemma = { LEMMA ~ COLON ~ similarity_opt }
+match_word_set = { (SET | SINGLETON) ~ MATCH_WORD_VAR ~ EQUALS ~ similarity_opt }
+match_word_var = { MATCH_WORD_VAR ~ ASSIGN ~ similarity_opt }
+match_word_get = { (GET | SINGLETON) ~ MATCH_WORD_VAR }
+
+match_lemma_set = { (SET | SINGLETON) ~ MATCH_LEMMA_VAR ~ EQUALS ~ similarity_opt }
+match_lemma_var = { MATCH_LEMMA_VAR ~ ASSIGN ~ similarity_opt }
+match_lemma_get = { (GET | SINGLETON) ~ MATCH_LEMMA_VAR }
+
 similarity_opt = ${ EXACT | PRECISE | FUZZY }
 
-PRECISE = ${ ^"precise" ~ "100" }
-EXACT = ${ ^"exact" ~ "0" }
+PRECISE = ${ ^"precise" | ("100" ~ PERCENT) }
+EXACT = ${ ^"exact" | "0" }
 THIRTY_SOMETHING = ${ "3" ~ ('3' .. '9') }
 FORTY_PLUS = ${ ('4' .. '9') ~ ('0' .. '9') }
 
-FUZZY = ${ THIRTY_SOMETHING | FORTY_PLUS } // legal thresholds are from 33 to 99 (100% is excluded because that would represent an exact-match
+FUZZY = ${ (THIRTY_SOMETHING | FORTY_PLUS) ~ PERCENT } // legal thresholds are from 33 to 99 (100% is excluded because that would represent an exact-match
 
 format_key = @{ ^"format" }
 FORMAT_VAR = _{ format_key }
-format_set = { (SET | SINGLETON) ~ FORMAT_VAR ~ ASSIGN ~ format_option }
-format_var = { VAR ~ FORMAT_VAR ~ ASSIGN ~ format_option }
-format_get = { VAR ~ FORMAT_VAR }
+format_set = { (SET | SINGLETON) ~ FORMAT_VAR ~ EQUALS ~ format_option }
+format_var = { FORMAT_VAR ~ ASSIGN ~ format_option }
+format_get = { (GET | SINGLETON) ~ FORMAT_VAR }
 format_option = _{ html | markdown | textual | json | yaml }
 html = ${ ^"html" }
 markdown = ${ ^"markdown" | ^"md" }
@@ -195,35 +193,32 @@ textual = ${ ^"text" | ^"utf8" }
 json = ${ ^"json" }
 yaml = ${ ^"yaml" }
 
+all_key = @{ ^"all" }
+ALL_VAR = _{ all_key }
+all_var = {ALL_VAR ~ ASSIGN ~ all_option }
+all_get = { (GET | SINGLETON) ~ ALL_VAR }
+all_option = _{ current | defaults }
+
 book = { (bookName | bookNum) }
-verse = ${ chapter ~ COLON ~ DIGIT_byte }
-verse_range = ${ COLON ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
-chapter = ${ COLON ~ DIGIT_byte }
-chapter_range = ${ COLON ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
+verse = ${ chapter ~ SEPERATOR ~ DIGIT_byte }
+verse_range = ${ SEPERATOR ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
+chapter = ${ SEPERATOR ~ DIGIT_byte }
+chapter_range = ${ SEPERATOR ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
 bookName = ${ ALPHA+ | (onetwothree ~ ALPHA+) }
 onetwothree = { ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
-var_opt = { span_var | lexicon_var | display_var | match_var | format_var }
-get_opt = { span_get | lexicon_get | display_get | match_get | format_get | version_get | all_get }
-apply_macro_part = { "||" ~ label_part}
-apply_macro_full =  { "||" ~ label_full}
+controls = { OPEN_BRACE ~ var_opt* ~ (apply_macro ~ var_opt*)? ~ CLOSE_BRACE }
+var_opt = { span_var | lexicon_var | lexicon_search_var | lexicon_render_var | match_var | match_lemma_var | match_word_var | format_var | all_var }
+get_opt = { span_get | lexicon_get | lexicon_search_get | lexicon_render_get | match_get | match_lemma_get | match_word_get | format_get | version_get | all_get }
+apply_macro = { "||" ~ hashtag_label }
 
-utilization_full = ${ label_full | historic_full }
-utilization_partial = ${ label_part | historic_part | defaults | currents }
-label_parameter = _{ label_any | wildcard }
-label_any = ${ (POUND | DOLLAR) ~ label }
-label_full = ${ DOLLAR ~ label }
-label_part = ${ POUND ~ label }
-historic_parameter = _{ historic_sequence | historic_any | id_range }
+label_parameter = _{ label | wildcard }
+hashtag_label = ${ POUND ~ label }
+historic_parameter = _{ historic_sequence | hashtag_id | id_range }
 historic_sequence = ${ id ~ HYPHEN ~ id }
-historic_any = ${ (POUND | DOLLAR) ~ id }
-historic_full = ${ DOLLAR ~ id }
-historic_part = ${ POUND ~ id }
-invoke_explicit = ${ SINGLETON ~ id }
+hashtag_id = ${ POUND ~ id }
+invoke_id = ${ SINGLETON ~ id }
 id = ${ ('1' .. '9') ~ ( '0' .. '9')* }
-defaults = ${ POUND ~ "0" }
-currents = ${ POUND ~ "*" }
-current = ${ DOLLAR ~ "*" }
 
 decoration = { italics | jesus }
 pos32 = ${ "#" ~ HEX32 }
@@ -521,8 +516,15 @@ nupos = {
 	^"#xx" |
 	^"#zz" }
 
-LEMMA = ${ ^"lemma" }
-WORD = ${ ^"word" }
+match_word_key = @{ ^"word" }
+match_lemma_key = @{ ^"lemma" }
+MATCH_LEMMA_VAR = _{ match_lemma_key | (match_key ~ "." ~ match_lemma_key ) }
+MATCH_WORD_VAR = _{ match_word_key | (match_key ~ "." ~ match_word_key ) }
+
+lexicon_search_key = @{ ^"word" }
+lexicon_render_key = @{ ^"lemma" }
+LEXICON_SEARCH_VAR = _{ lexicon_search_key | (lexicon_key ~ "." ~ lexicon_search_key ) }
+LEXICON_RENDER_VAR = _{ lexicon_render_key | (lexicon_key ~ "." ~ lexicon_render_key ) }
 
 any_range = _{ (id_range ~ date_range*) | (date_range ~ id_range*) }
 id_range = _{ (id_from | id_until) | (id_until | id_from) }
@@ -549,27 +551,32 @@ label = ${ LABEL_FIRST_CHAR ~ LABEL_CHAR* }
 LABEL_CHAR = _{ (DIGIT | "-" | "_" | LABEL_FIRST_CHAR) }
 LABEL_FIRST_CHAR = _{ ( 'a' .. 'z' | 'A' .. 'Z') }
 
-ALL = _{ ^"all" }
-all_get = { VAR ~ ALL }
-VERSION = _{ ^"version" }
-version_get = { VAR ~ VERSION }
+version_get = { (GET | SINGLETON) ~ VERSION_VAR }
+version_key = @{ ^"version" }
+VERSION_VAR = _{ version_key }
+
 OR = _{ "|" }
 SEARCH_EXPLICIT_BOUNDARY = _{ "+" }
 OPEN_BRACE = _{ "[" }
 CLOSE_BRACE = _{ "]" }
-DOLLAR = _{ "$" }
 POUND = _{ "#" }
 FILTER_OP = _{ "<" }
 QUOTE = _{ "\"" }
-COLON = @{ ":" }
-ASSIGN = _{ "=" }
+ASSIGN = _{ ":" }
+SEPERATOR = _{ ":" }
+EQUALS = _{ "=" }
 STAR = _{ "*" }
 SPACE = _{ " " }
-VAR = _{ "%" }
-SET = _{ SINGLETON ~ set_command ~ VAR }
+PERCENT = _{ "%" }
+SET = _{ SINGLETON ~ set_command }
 set_command = ${ ^"set" }
+GET = _{ SINGLETON ~ get_command }
+get_command = ${ ^"get" }
 SINGLETON = _{ "@" }
 not = { "-" }
+
+current = ${ ^"current" }
+defaults = ${ ^"defaults" }
 
 term_contains = ${ text ~ STAR }
 term_end = ${ text }
