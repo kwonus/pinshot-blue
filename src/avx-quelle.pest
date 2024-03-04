@@ -15,12 +15,12 @@ WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | implicits }
 implicits = { segment ~ additional_segment* }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "4.3.03" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "4303" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
-segment = { elements? ~ filter* ~ apply_macro? }
+segment = { elements? ~ filter* ~ (apply_macro | export)? }
 elements = _{ (expression ~ controls?) | (controls ~ expression?) }
 expression = { search | hashtag_label | hashtag_id }
-singleton = { exit | help | history | review | delete | absorb | get | set | clear | print | invoke_id }
+singleton = { exit | help | history | review | delete | absorb | get | set | clear | invoke_id }
 
 export = { (output | append | overwrite) }
 additional_segment = _{ SEARCH_EXPLICIT_BOUNDARY ~ segment }
@@ -105,7 +105,6 @@ punc = { punc_any | punc_question | punc_declare | punc_dash | punc_semi | punc_
 italics = { ^"/italics/" }
 jesus = { ^"/Jesus/" }
 
-print = { SINGLETON ~ ^"print" ~ export? }
 exit = { SINGLETON ~ ^"exit" }
 help = { SINGLETON ~ ^"help" ~ topic? }
 

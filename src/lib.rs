@@ -8,7 +8,6 @@ extern crate pest_derive;
 use pest::Parser;
 use pest::iterators::Pairs;
 use serde::Serialize;
-use itoa;
 
 #[derive(Parser)]
 #[grammar = "avx-quelle.pest"]
@@ -196,33 +195,9 @@ pub extern "C" fn delete_quelle_parse(c_lent: *mut c_char) -> bool {
     };
 }
 
-pub fn assert_grammar_revision_internal(major: u8, ymdd: u16) -> u16 {  // "2.Y.MDD" ... 3B21 would be 2.3.B21
+pub fn assert_grammar_revision_internal(ymdd: u16) -> u16 {  // "YMDD"
 
-    let y  = (ymdd & 0xF000) >> 12;
-    let m  = (ymdd & 0x0F00) >>  8;
-    let d1 = (ymdd & 0x00F0) >>  4;  // days are not truly hex in this encoding ... dd is 01, 02, 03, ... , 31 || all hex numbers excluded e.g. 0x31 means decimal 31 in this encoding
-    let d2 =  ymdd & 0x000F;         // days are not truly hex in this encoding ... dd is 01, 02, 03, ... , 31 || all hex numbers excluded e.g. 0x31 means decimal 31 in this encoding
-
-    let mut decimal = itoa::Buffer::new();
-    let mut version = "_AVX_REV_ =? ".to_owned() + decimal.format(major) + "." + decimal.format(y) + ".";
-
-    if m > 12 {
-        version.push_str("X");
-    }
-    else if m == 12 {
-        version.push_str("C");
-    }
-    else if m == 11 {
-        version.push_str("B");
-    }
-    else if m == 10 {
-        version.push_str("A");
-    }
-    else {
-        version.push_str(decimal.format(m));
-    }
-    version.push_str(decimal.format(d1));
-    version.push_str(decimal.format(d2));
+    let version = format!("_AVX_REV_ =? {:X}", ymdd);
 
     let result = get_parse(&version);
 
@@ -237,7 +212,7 @@ pub fn assert_grammar_revision_internal(major: u8, ymdd: u16) -> u16 {  // "2.Y.
 
 #[no_mangle]
 pub unsafe extern "C" fn assert_grammar_revision(ymdd: u16) -> u16 {
-    return assert_grammar_revision_internal(2, ymdd);
+    return assert_grammar_revision_internal(ymdd);
 }
 
 #[no_mangle]
