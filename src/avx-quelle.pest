@@ -204,10 +204,10 @@ all_get = { (GET | SINGLETON) ~ ALL_VAR }
 all_option = _{ current | defaults }
 
 book = { (bookName | bookNum) }
-verse = ${ chapter ~ SEPERATOR ~ DIGIT_byte }
-verse_range = ${ SEPERATOR ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
-chapter = ${ SEPERATOR ~ DIGIT_byte }
-chapter_range = ${ SEPERATOR ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
+verse = ${ chapter ~ COLON ~ DIGIT_byte }
+verse_range = ${ COLON ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
+chapter = ${ COLON ~ DIGIT_byte }
+chapter_range = ${ COLON ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
 bookName = ${ ALPHA+ | (onetwothree ~ ALPHA+) }
 onetwothree = { ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
@@ -567,7 +567,7 @@ POUND = _{ "#" }
 FILTER_OP = _{ "<" }
 QUOTE = _{ "\"" }
 ASSIGN = _{ ":" }
-SEPERATOR = _{ ":" }
+COLON = _{ ":" }
 EQUALS = _{ "=" }
 STAR = _{ "*" }
 SPACE = _{ " " }
