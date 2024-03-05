@@ -15,17 +15,22 @@ WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | implicits }
 implicits = { segment ~ additional_segment* }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "4303" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "4304" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
-segment = { elements? ~ filter* ~ (apply_macro | export)? }
+segment = { primary_blocks ~ directive_blocks? }
+primary_blocks = _{ primary_scoping_optional | primary_scoping_included } // a non-null block is required/expected
+primary_scoping_optional = _{ elements  ~ (filter_macro | filter*)? }
+primary_scoping_included = _{ elements? ~ (filter_macro | filter*)  }
+directive_blocks = _{ apply_macro | export }
 elements = _{ (expression ~ controls?) | (controls ~ expression?) }
-expression = { search | hashtag_label | hashtag_id }
+expression = { macro_utilization | search }
+macro_utilization = _{ hashtag_label | hashtag_id }
 singleton = { exit | help | history | review | delete | absorb | get | set | clear | invoke_id }
 
 export = { (output | append | overwrite) }
 additional_segment = _{ SEARCH_EXPLICIT_BOUNDARY ~ segment }
 filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse_range | chapter_range | verse | chapter)? }
-
+filter_macro = { FILTER_OP ~ macro_utilization }
 item = { (wildcard | text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | punc | decoration | delta | entity ) }
 fragment = { feature_option ~ (AND ~ feature_option)* }
 feature_option = { feature ~ (OR ~ feature)* }
@@ -206,7 +211,7 @@ chapter_range = ${ SEPERATOR ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
 bookName = ${ ALPHA+ | (onetwothree ~ ALPHA+) }
 onetwothree = { ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
-controls = { OPEN_BRACE ~ var_opt* ~ (apply_macro ~ var_opt*)? ~ CLOSE_BRACE }
+controls = { OPEN_BRACE ~ (macro_utilization | var_opt*) ~ CLOSE_BRACE }
 var_opt = { span_var | lexicon_var | lexicon_search_var | lexicon_render_var | match_var | match_lemma_var | match_word_var | format_var | all_var }
 get_opt = { span_get | lexicon_get | lexicon_search_get | lexicon_render_get | match_get | match_lemma_get | match_word_get | format_get | version_get | all_get }
 apply_macro = { "||" ~ hashtag_label }
