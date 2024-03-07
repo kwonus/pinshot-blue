@@ -17,7 +17,7 @@ AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
 avx_rev = { AVX_QUERY ~ "4309" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 selection_statement = { selection_criteria ~ directive? }
-selection_criteria = _{ final_block_optional | final_block_included } // a non-null block is required/expected
+selection_criteria = { final_block_optional | final_block_included } // a non-null block is required/expected
 final_block_optional = _{ elements  ~ filter_block? }
 final_block_included = _{ elements? ~ filter_block  }
 directive = _{ macro_directive | export_directive }
