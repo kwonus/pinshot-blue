@@ -18,12 +18,12 @@ avx_rev = { AVX_QUERY ~ "4309" }   // grammar rule allows clients to assert expe
 
 selection_statement = { selection_criteria ~ directive? }
 selection_criteria = { final_block_optional | final_block_included } // a non-null block is required/expected
-final_block_optional = _{ elements  ~ filter_block? }
-final_block_included = _{ elements? ~ filter_block  }
+final_block_optional = _{ initial_blocks  ~ scoping_block? }
+final_block_included = _{ initial_blocks? ~ scoping_block  }
 directive = _{ macro_directive | export_directive }
-elements = _{ (expression_block ~ settings_block?) | (settings_block ~ expression_block?) }
+initial_blocks = _{ (expression_block ~ settings_block?) | (settings_block ~ expression_block?) }
 expression_block = { macro_utilization | search }
-filter_block = { filter_macro | filter* }
+scoping_block = { filter_macro | filter* }
 macro_utilization = _{ hashtag_label | hashtag_id }
 singleton = { exit | help | history | review | delete | absorb | get | set | clear | invoke_id }
 
@@ -213,7 +213,7 @@ bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } //
 settings_block = { OPEN_BRACE ~ (macro_utilization | var_opt*) ~ CLOSE_BRACE }
 var_opt = { span_var | lexicon_var | lexicon_search_var | lexicon_render_var | match_var | match_lemma_var | match_word_var | format_var | all_var }
 get_opt = { span_get | lexicon_get | lexicon_search_get | lexicon_render_get | match_get | match_lemma_get | match_word_get | format_get | version_get | all_get }
-macro_directive = { "||" ~ hashtag_label }
+macro_directive = { "||" ~ label }
 
 label_parameter = _{ label | wildcard }
 hashtag_label = ${ POUND ~ label }
