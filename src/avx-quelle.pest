@@ -24,7 +24,7 @@ directive = _{ macro_directive | export_directive }
 initial_blocks = _{ (expression_block ~ settings_block?) | (settings_block ~ expression_block?) }
 expression_block = { macro_utilization | search }
 scoping_block = { filter_macro | filter* }
-macro_utilization = _{ hashtag_label | hashtag_id }
+macro_utilization = _{ hashtag_txt | hashtag_num }
 singleton = { exit | help | history | review | delete | absorb | get | set | clear | invoke_id }
 
 export_directive = { (output | append | overwrite) }
@@ -114,15 +114,15 @@ help = { SINGLETON ~ ^"help" ~ topic? }
 
 topic = ${ SINGLETON? ~ (root_topics | group_topics) }
 reset = { SINGLETON ~ delete_keyword ~ review_flag_history ~ any_range }
-delete = { SINGLETON ~ delete_keyword ~ (label | (review_flag_labels ~ ((wildcard ~ date_range*) | date_range ~ wildcard*)) ) }
+delete = { SINGLETON ~ delete_keyword ~ (tag | (review_flag_tags ~ ((wildcard ~ date_range*) | date_range ~ wildcard*)) ) }
 delete_keyword = _{ ^"delete" }
-review = { SINGLETON ~ review_keyword ~ (label | (review_flag_labels ~ ((wildcard ~ date_range*) | date_range ~ wildcard*))* ) }
-review_flag_labels = _ { ^"-labels" }
+review = { SINGLETON ~ review_keyword ~ (tag | (review_flag_tags ~ ((wildcard ~ date_range*) | date_range ~ wildcard*))* ) }
+review_flag_tags = _ { ^"-tags" }
 history_full_reset = { "-all" }
 history = { SINGLETON ~ review_keyword ~ (id | (review_flag_history ~ any_range* ) ) }
 review_flag_history = _ { ^"-history" }
 review_keyword = _{ ^"view" }
-absorb = { SINGLETON ~ ^"absorb" ~ (label | id) }
+absorb = { SINGLETON ~ ^"absorb" ~ (tag | id) }
 clear = { SINGLETON ~ ^"clear" ~ (var | all_key) }
 var = { span_key | lexicon_key | lexicon_search_key | lexicon_render_key | match_key | match_lemma_key | match_word_key | format_key }
 set = { span_set | lexicon_set | lexicon_search_set | lexicon_render_set | match_set | match_lemma_set | match_word_set | format_set }
@@ -134,7 +134,8 @@ ordered = { QUOTE ~ fragment ~ (unanchored | fragment)* ~ QUOTE } // Quoted/Orde
 unanchored = { ellipsis ~ fragment }
 
 span_key = @{ ^"span" }
-SPAN_VAR = _{ span_key }
+SPAN_KEY = @{ ^"search.span" }
+SPAN_VAR = _{ span_key | SPAN_KEY }
 span_set = { (SET | SINGLETON) ~ SPAN_VAR ~ EQUALS ~ span_option }
 span_var = { SPAN_VAR ~ ASSIGN ~ span_option }
 span_get = { (GET | SINGLETON) ~ SPAN_VAR }
@@ -185,7 +186,8 @@ FORTY_PLUS = ${ ('4' .. '9') ~ ('0' .. '9') }
 FUZZY = ${ (THIRTY_SOMETHING | FORTY_PLUS) ~ PERCENT } // legal thresholds are from 33 to 99 (100% is excluded because that would represent an exact-match
 
 format_key = @{ ^"format" }
-FORMAT_VAR = _{ format_key }
+FORMAT_KEY = @{ ^"render.format" }
+FORMAT_VAR = _{ format_key | FORMAT_KEY }
 format_set = { (SET | SINGLETON) ~ FORMAT_VAR ~ EQUALS ~ format_option }
 format_var = { FORMAT_VAR ~ ASSIGN ~ format_option }
 format_get = { (GET | SINGLETON) ~ FORMAT_VAR }
@@ -213,13 +215,13 @@ bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } //
 settings_block = { OPEN_BRACE ~ (macro_utilization | var_opt*) ~ CLOSE_BRACE }
 var_opt = { span_var | lexicon_var | lexicon_search_var | lexicon_render_var | match_var | match_lemma_var | match_word_var | format_var | all_var }
 get_opt = { span_get | lexicon_get | lexicon_search_get | lexicon_render_get | match_get | match_lemma_get | match_word_get | format_get | version_get | all_get }
-macro_directive = { "||" ~ label }
+macro_directive = { "||" ~ tag }
 
-label_parameter = _{ label | wildcard }
-hashtag_label = ${ POUND ~ label }
-historic_parameter = _{ historic_sequence | hashtag_id | id_range }
+tag_parameter = _{ tag | wildcard }
+hashtag_txt = ${ POUND ~ tag }
+historic_parameter = _{ historic_sequence | hashtag_num | id_range }
 historic_sequence = ${ id ~ HYPHEN ~ id }
-hashtag_id = ${ POUND ~ id }
+hashtag_num = ${ POUND ~ id }
 invoke_id = ${ SINGLETON ~ id }
 id = ${ ('1' .. '9') ~ ( '0' .. '9')* }
 
@@ -526,8 +528,8 @@ MATCH_WORD_VAR = _{ match_word_key | (match_key ~ "." ~ match_word_key ) }
 
 lexicon_search_key = @{ ^"word" }
 lexicon_render_key = @{ ^"lemma" }
-LEXICON_SEARCH_VAR = _{ lexicon_search_key | (lexicon_key ~ "." ~ lexicon_search_key ) }
-LEXICON_RENDER_VAR = _{ lexicon_render_key | (lexicon_key ~ "." ~ lexicon_render_key ) }
+LEXICON_SEARCH_VAR = _{ lexicon_search_key | (lexicon_key ~ "." ~ lexicon_search_key ) | (lexicon_search_key ~ "." ~ lexicon_key ) }
+LEXICON_RENDER_VAR = _{ lexicon_render_key | (lexicon_key ~ "." ~ lexicon_render_key ) | (lexicon_render_key ~ "." ~ lexicon_key ) }
 
 any_range = _{ (id_range ~ date_range*) | (date_range ~ id_range*) }
 id_range = _{ (id_from | id_until) | (id_until | id_from) }
@@ -550,13 +552,15 @@ HEX16 = ${ HEX ~ HEX ~ HEX ~ HEX }
 HEX32 = ${ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX ~ HEX }
 AND = _{ "&" }
 
-label = ${ LABEL_FIRST_CHAR ~ LABEL_CHAR* }
+tag = ${ LABEL_FIRST_CHAR ~ LABEL_CHAR* }
 LABEL_CHAR = _{ (DIGIT | "-" | "_" | LABEL_FIRST_CHAR) }
 LABEL_FIRST_CHAR = _{ ( 'a' .. 'z' | 'A' .. 'Z') }
 
 version_get = { (GET | SINGLETON) ~ VERSION_VAR }
 version_key = @{ ^"version" }
-VERSION_VAR = _{ version_key }
+grammar_key = @{ ^"grammar.revision" }
+revision_key = @{ ^"revision" }
+VERSION_VAR = _{ version_key | revision_key | grammar_key }
 
 OR = _{ "|" }
 OPEN_BRACE = _{ "[" }
