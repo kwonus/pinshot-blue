@@ -14,7 +14,7 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | selection_statement }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "4309" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "4323" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 selection_statement = { selection_criteria ~ directive? }
 selection_criteria = { final_block_optional | final_block_included } // a non-null block is required/expected
@@ -28,7 +28,7 @@ macro_utilization = _{ hashtag_txt | hashtag_num }
 singleton = { exit | help | history | review | delete | absorb | get | set | clear | invoke_id }
 
 export_directive = { (output | append | overwrite) }
-filter = { FILTER_OP ~ (bookName | bookNum) ~ (verse_range | chapter_range | verse | chapter)? }
+filter = { FILTER_OP ~ filter_opt }
 filter_macro = _{ FILTER_OP ~ macro_utilization }
 item = { (wildcard | text | pos | pn_pos12 | pos32 | nupos | greek | hebrew | loc | seg | lemma | punc | decoration | delta | entity ) }
 fragment = { feature_option ~ (AND ~ feature_option)* }
@@ -110,9 +110,8 @@ italics = { ^"/italics/" }
 jesus = { ^"/Jesus/" }
 
 exit = { SINGLETON ~ ^"exit" }
-help = { SINGLETON ~ ^"help" ~ topic? }
+help = { SINGLETON ~ ^"help" ~ text* }
 
-topic = ${ SINGLETON? ~ (root_topics | group_topics) }
 reset = { SINGLETON ~ delete_keyword ~ review_flag_history ~ any_range }
 delete = { SINGLETON ~ delete_keyword ~ (tag | (review_flag_tags ~ ((wildcard ~ date_range*) | date_range ~ wildcard*)) ) }
 delete_keyword = _{ ^"delete" }
@@ -204,13 +203,11 @@ all_var = {ALL_VAR ~ ASSIGN ~ all_option }
 all_get = { (GET | SINGLETON) ~ ALL_VAR }
 all_option = _{ current | defaults }
 
-book = { (bookName | bookNum) }
-verse = ${ chapter ~ COLON ~ DIGIT_byte }
-verse_range = ${ COLON ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
 chapter = ${ COLON ~ DIGIT_byte }
-chapter_range = ${ COLON ~ DIGIT_byte ~ HYPHEN ~ DIGIT_byte}
-bookName = ${ ALPHA+ | (onetwothree ~ ALPHA+) }
-onetwothree = { ('1' .. '3') }
+filter_opt = _{ filter_spec ~ chapter_range* }
+filter_spec = { onetwothree* ~ text+ }
+chapter_range = { DIGIT_byte ~ (HYPHEN ~ DIGIT_byte)* }
+onetwothree = _{ ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
 settings_block = { OPEN_BRACE ~ (macro_utilization | var_opt*) ~ CLOSE_BRACE }
 var_opt = { span_var | lexicon_var | lexicon_search_var | lexicon_render_var | match_var | match_lemma_var | match_word_var | format_var | all_var }
@@ -245,38 +242,6 @@ FILESPEC = _{ ('a' .. 'z' | 'A' .. 'Z' | DIGIT) | "/" | "\\" | "-" | "_" | ":" }
 quoted_filespec = ${ QUOTE ~ FILESPEC ~ (FILESPEC | " ") + ~ QUOTE }
 unquoted_legal = ${ FILESPEC+ }
 filename = { quoted_filespec | unquoted_legal }
-
-// SEARCH
-TOPIC_FIND = @{ ^"FIND" } // 1
-TOPIC_FILTER = @{ ^"FILTER" } // 2
-// CONTROL
-TOPIC_SET = @{ ^"SET" } // 3
-TOPIC_CLEAR = @{ ^"CLEAR" } // 4
-TOPIC_OPTION = @{ ^"OPTION" } // NEW
-TOPIC_GET = @{ ^"GET" } // 5
-TOPIC_RESET = @{ ^"RESET" } // 6
-TOPIC_ABSORB = @{ ^"ABSORB" } // 7
-//OUTPUT
-TOPIC_PRINT = @{ ^"PRINT" } // 8
-TOPIC_EXPORT = @{ ^"EXPORT" } // 9
-// SYSTEM
-TOPIC_HELP = @{ ^"HELP" } // 10
-TOPIC_VERSION = @{ ^"VERSION" } // 11
-TOPIC_EXIT = @{ ^"EXIT" } // 12
-// HISTORY & LABELING
-TOPIC_INVOKE = @{ ^"INVOKE" } // 13
-TOPIC_APPLY = @{ ^"APPLY" }   // 14
-TOPIC_DELETE = @{ ^"DELETE" } // 10
-TOPIC_REVIEW = @{ ^"REVIEW" } // 16
-TOPIC_INIT = @{ ^"INITIALIZE" } // 17 **
-root_topics = { TOPIC_FIND | TOPIC_FILTER | TOPIC_SET | TOPIC_CLEAR | TOPIC_OPTION | TOPIC_GET | TOPIC_RESET | TOPIC_ABSORB | TOPIC_PRINT | TOPIC_EXPORT | TOPIC_HELP | TOPIC_VERSION | TOPIC_EXIT | TOPIC_INVOKE | TOPIC_APPLY | TOPIC_DELETE | TOPIC_REVIEW | TOPIC_INIT }
-
-GROUP_TOPIC_SEARCH = @{ ^"SEARCH" }
-GROUP_TOPIC_CONTROL = @{ ^"CONTROL" | ^"SETTINGS" }
-GROUP_TOPIC_OUTPUT = @{ ^"OUTPUT" }
-GROUP_TOPIC_SYSTEM = @{ ^"SYSTEM" }
-GROUP_TOPIC_HISTORY_AND_LABELING = @{ ^"HISTORY" | ^"MACRO" | ^"LABEL" | ^"LABELING" | ^"LABELLING" }
-group_topics = { GROUP_TOPIC_SYSTEM | GROUP_TOPIC_OUTPUT | GROUP_TOPIC_CONTROL | GROUP_TOPIC_SEARCH | GROUP_TOPIC_HISTORY_AND_LABELING }
 
 nupos = {
 	^"#a-acp" |
