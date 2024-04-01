@@ -198,7 +198,7 @@ yaml = ${ ^"yaml" }
 all_key = @{ ^"all" }
 ALL_VAR = _{ all_key }
 all_var = {ALL_VAR ~ EQUALS ~ all_option }
-all_get = { (GET | SINGLETON) ~ ALL_VAR }
+all_get = { (GET | SINGLETON) ~ ALL_VAR? }
 all_option = _{ current | defaults }
 
 filter_opt = _{ filter_spec ~ chapter_range* }
