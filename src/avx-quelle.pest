@@ -23,7 +23,7 @@ expression_block = { macro_utilization | search }
 scoping_block = { filter_macro | filter+ }
 settings_block = { assignment_macro | assignment+  }
 macro_utilization = _{ hashtag_txt | hashtag_num }
-singleton = { exit | help | view | delete | absorb | set | get | clear } // | invoke_id }
+singleton = { exit | help | view | view_bulk | delete | delete_bulk | absorb | set | get | clear }
 
 export_directive = { (output | append | overwrite) }
 filter = { FILTER_OP ~ filter_opt }
@@ -114,27 +114,26 @@ exit_cmd = @{ SINGLETON ~ ^"exit" }
 help = { help_cmd ~ text* }
 help_cmd = @{ SINGLETON ~ ^"exit" }
 
-view = { view_cmd ~ macro_arg | history_arg | HISTORY_FLAG | HISTORY_FLAG}
-delete = { delete_cmd ~ macro_arg | history_arg }
-history_arg  = { (HISTORY_FLAG ~ date_range) | (HISTORY_FLAG? ~ id_range) | (HISTORY_FLAG ~ full_reset) | (HISTORY_FLAG? ~ POUND ~ id) }
-macro_arg  = { macro_arg1 | macro_arg2 | macro_arg3 }
-macro_arg1 = _{ (MACRO_FLAG? ~ POUND? ~ wildcard) | (MACRO_FLAG? ~ POUND? ~ tag) | (MACRO_FLAG ~ date_range) }
-macro_arg2 = _{ (MACRO_FLAG? ~ POUND? ~ wildcard) ~ date_range }
-macro_arg3 = _{ (MACRO_FLAG? ~ date_range) ~ (POUND? ~ wildcard) }
-delete_cmd = _{ delete_keyword }
-delete_keyword = @{ SINGLETON ~ ^"delete" }
+view = { view_cmd ~ (id | tag) }
+view_bulk = { bulk_view_history | bulk_view_macros }
+bulk_view_history = _{ history_cmd ~ (date_range | id_range)? }
+bulk_view_macros = _{ macros_cmd ~ (wildcard | date_range | id_range)? }
 
-MACRO_FLAG = _{ macro_flag }
-macro_flag = @{ ^"-macros" | ^"-macro" }
-full_reset = @{ "-all" }
-HISTORY_FLAG = _{ history_flag }
-history_flag = @{ ^"-history" }
-view_cmd = _{ view_keyword }
-view_keyword = @{ SINGLETON ~ ^"view" }
-absorb = { absorb_keyword ~ (tag | id) }
-absorb_keyword = @{ SINGLETON ~ ^"absorb" }
-clear = { clear_keyword ~ (var | all_key) }
-clear_keyword = @{ SINGLETON ~ ^"clear" }
+delete = { delete_cmd ~ (id | tag) }
+delete_bulk = { bulk_delete_history | bulk_delete_macros }
+bulk_delete_history = _{ history_cmd ~ delete_arg ~ (date_range | all_key) }
+bulk_delete_macros = _{ macros_cmd ~ delete_arg ~ (wildcard | date_range) }
+
+delete_cmd = @{ SINGLETON ~ ^"delete" }
+delete_arg = ${ ^"delete" }
+macros_cmd = @{ SINGLETON ~ ^"macros" }
+history_cmd = @{ SINGLETON ~ ^"history" }
+view_cmd = @{ SINGLETON ~ ^"view" }
+
+absorb = { absorb_cmd ~ (id | tag) }
+absorb_cmd = @{ SINGLETON ~ ^"absorb" }
+clear = { clear_cmd ~ (var | all_key) }
+clear_cmd = @{ SINGLETON ~ ^"clear" }
 var = { span_key | format_key | lexicon_search_key | lexicon_render_key | lexicon_key | similarity_lemma_key | similarity_word_key | similarity_key }
 set = { span_set | format_set | lexicon_search_set | lexicon_render_set | lexicon_set | similarity_set | similarity_lemma_set | similarity_word_set }
 get = { span_get | format_get | lexicon_search_get | lexicon_render_get | lexicon_get  | similarity_lemma_get | similarity_word_get | similarity_get | version_get | all_get }
@@ -234,8 +233,7 @@ macro_directive = { "||" ~ tag }
 tag_parameter = _{ tag | wildcard }
 hashtag_txt = ${ POUND ~ tag }
 hashtag_num = ${ POUND ~ id }
-//invoke_id = ${ SINGLETON ~ id }
-id = @{ ('1' .. '9') ~ ( '0' .. '9')* }
+id = ${ ('1' .. '9') ~ ( '0' .. '9')* }
 
 decoration = { italics | jesus }
 pos32 = @{ BRACE_OPEN ~ HEX32 ~ BRACE_CLOSE }
@@ -501,9 +499,9 @@ nupos = { BRACE_OPEN ~ (
 	^"xx" |
 	^"zz") ~ BRACE_CLOSE }
 
-id_range = _{ (id_from ~ id_until) | (id_until ~ id_from) | id_until | id_from }
-id_from = { ^"from" ~ POUND ~ id }
-id_until = { ^"to" ~ POUND ~ id }
+id_range = _{ (id_from ~ id_until?) | (id_until ~ id_from?) }
+id_from = { ^"from" ~ id }
+id_until = { ^"to" ~ id }
 
 date_range = _{ (date_from ~ date_until) | (date_until ~ date_from) | date_until | date_from }
 date_from = { ^"from" ~ yyyymmdd }
