@@ -139,7 +139,7 @@ pub unsafe extern "C" fn create_quelle_parse(c_stmt: *const c_char) -> *mut c_ch
         result.error = "Invalid Input Error".to_string();
     }
     else if result.parse.is_empty() && !result.error.is_empty() {
-        result.error = "Unexpected empty parse result".to_string();
+        result.error = "Syntax error encountered.".to_string();
     }
 
     let root = RootParse {
@@ -172,7 +172,7 @@ pub unsafe extern "C" fn create_quelle_parse_raw(c_stmt: *const c_char) -> *mut 
         raw.error = "Invalid Input Error".to_string();
     }
     if raw.result.is_empty() && raw.error.is_empty() {
-        raw.error = "Unexpected empty parse result".to_string();
+        raw.error = "Syntax error encountered.".to_string();
     }
 
     let output: String = match serde_json::to_string(&raw) {
@@ -217,7 +217,7 @@ pub unsafe extern "C" fn assert_grammar_revision(ymdd: u16) -> u16 {
 
 #[no_mangle]
 pub unsafe extern "C" fn get_library_revision() -> u16 {
-    return 0x4331;
+    return 0x4407;
 }
 
 fn recurse(children: Pairs<Rule>, items: &mut Vec<Parsed>)

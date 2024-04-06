@@ -14,7 +14,7 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | selection_statement }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "4331" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "4407" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 selection_statement = { (suffixes | (expression_block ~ suffixes?)) ~ directive? }
 suffixes = _{ (settings_block ~ scoping_block?) | (scoping_block ~ settings_block?)}
@@ -23,7 +23,7 @@ expression_block = { macro_utilization | search }
 scoping_block = { filter_macro | filter+ }
 settings_block = { assignment_macro | assignment+  }
 macro_utilization = _{ hashtag_txt | hashtag_num }
-singleton = { exit | help | history | review | delete | absorb | set | get | clear | invoke_id }
+singleton = { exit | help | view | delete | absorb | set | get | clear } // | invoke_id }
 
 export_directive = { (output | append | overwrite) }
 filter = { FILTER_OP ~ filter_opt }
@@ -35,7 +35,7 @@ fragment = { feature_option ~ (AND ~ feature_option)* }
 feature_option = { feature ~ (OR ~ feature)* }
 feature = { not? ~ item}
 
-entity = _{ "[" ~ entities ~ "]" }
+entity = _{SQUIGGLY_OPEN ~ entities ~ SQUIGGLY_CLOSE }
 entities = @{ ^"person" | ^"man" | ^"woman" | ^"tribe" | ^"city" | ^"river" | ^"mountain" | ^"animal" | ^"gemstone" | ^"measurement" | ^"any" | ^"any_Hitchcock" }
 
 delta = { ^"/delta/" }
@@ -109,23 +109,35 @@ punc = { punc_any | punc_question | punc_declare | punc_dash | punc_semi | punc_
 italics = { ^"/italics/" }
 jesus = { ^"/Jesus/" }
 
-exit = { SINGLETON ~ ^"exit" }
-help = { SINGLETON ~ ^"help" ~ text* }
+exit = { exit_cmd }
+exit_cmd = @{ SINGLETON ~ ^"exit" }
+help = { help_cmd ~ text* }
+help_cmd = @{ SINGLETON ~ ^"exit" }
 
-reset = { SINGLETON ~ delete_keyword ~ review_flag_history ~ any_range }
-delete = { SINGLETON ~ delete_keyword ~ (tag | (review_flag_tags ~ ((wildcard ~ date_range*) | date_range ~ wildcard*)) ) }
-delete_keyword = _{ ^"delete" }
-review = { SINGLETON ~ review_keyword ~ (tag | (review_flag_tags ~ ((wildcard ~ date_range*) | date_range ~ wildcard*))* ) }
-review_flag_tags = _ { ^"-tags" }
-history_full_reset = { "-all" }
-history = { SINGLETON ~ review_keyword ~ (id | (review_flag_history ~ any_range* ) ) }
-review_flag_history = _ { ^"-history" }
-review_keyword = _{ ^"view" }
-absorb = { SINGLETON ~ ^"absorb" ~ (tag | id) }
-clear = { SINGLETON ~ ^"clear" ~ (var | all_key) }
-var = { span_key | lexicon_key | lexicon_search_key | lexicon_render_key | match_key | match_lemma_key | match_word_key | format_key }
-set = { span_set | format_set | lexicon_search_set | lexicon_render_set | lexicon_set | match_set | match_lemma_set | match_word_set }
-get = { span_get | format_get | lexicon_search_get | lexicon_render_get | lexicon_get | match_get | match_lemma_get | match_word_get | version_get | all_get }
+view = { view_cmd ~ macro_arg | history_arg | HISTORY_FLAG | HISTORY_FLAG}
+delete = { delete_cmd ~ macro_arg | history_arg }
+history_arg  = { (HISTORY_FLAG ~ date_range) | (HISTORY_FLAG? ~ id_range) | (HISTORY_FLAG ~ full_reset) | (HISTORY_FLAG? ~ POUND ~ id) }
+macro_arg  = { macro_arg1 | macro_arg2 | macro_arg3 }
+macro_arg1 = _{ (MACRO_FLAG? ~ POUND? ~ wildcard) | (MACRO_FLAG? ~ POUND? ~ tag) | (MACRO_FLAG ~ date_range) }
+macro_arg2 = _{ (MACRO_FLAG? ~ POUND? ~ wildcard) ~ date_range }
+macro_arg3 = _{ (MACRO_FLAG? ~ date_range) ~ (POUND? ~ wildcard) }
+delete_cmd = _{ delete_keyword }
+delete_keyword = @{ SINGLETON ~ ^"delete" }
+
+MACRO_FLAG = _{ macro_flag }
+macro_flag = @{ ^"-macros" | ^"-macro" }
+full_reset = @{ "-all" }
+HISTORY_FLAG = _{ history_flag }
+history_flag = @{ ^"-history" }
+view_cmd = _{ view_keyword }
+view_keyword = @{ SINGLETON ~ ^"view" }
+absorb = { absorb_keyword ~ (tag | id) }
+absorb_keyword = @{ SINGLETON ~ ^"absorb" }
+clear = { clear_keyword ~ (var | all_key) }
+clear_keyword = @{ SINGLETON ~ ^"clear" }
+var = { span_key | format_key | lexicon_search_key | lexicon_render_key | lexicon_key | similarity_lemma_key | similarity_word_key | similarity_key }
+set = { span_set | format_set | lexicon_search_set | lexicon_render_set | lexicon_set | similarity_set | similarity_lemma_set | similarity_word_set }
+get = { span_get | format_get | lexicon_search_get | lexicon_render_get | lexicon_get  | similarity_lemma_get | similarity_word_get | similarity_get | version_get | all_get }
 
 search = { ordered | unordered }   // quoted-searches are ordered // unquoted-searches are unordered
 unordered = { fragment+ } // Unordered expression
@@ -133,26 +145,31 @@ ordered = { QUOTE ~ fragment ~ (unanchored | fragment)* ~ QUOTE } // Quoted/Orde
 unanchored = { ellipsis ~ fragment }
 
 span_key = @{ ^"span" }
-SPAN_VAR = _{ span_key }
-span_set = { (SET | SINGLETON) ~ SPAN_VAR ~ EQUALS ~ span_option }
-span_var = { SPAN_VAR ~ EQUALS ~ span_option }
-span_get = { (GET | SINGLETON) ~ SPAN_VAR }
+span_cmd = @{ SINGLETON ~ span_key }
+span_set = { ( (SET ~ span_key) | span_cmd) ~ EQUALS ~ span_option }
+span_var = { span_key ~ EQUALS ~ span_option }
+span_get = { GET ~ span_key }
 span_option = _{ DIGIT_le3 | span_verse }
 span_verse = ${ ^"verse" }
 
 lexicon_key = @{ ^"lexicon" }
-LEXICON_VAR = _{ lexicon_key }
-lexicon_set = { (SET | SINGLETON) ~ LEXICON_VAR ~ EQUALS ~ lexicon_option }
-lexicon_var = { LEXICON_VAR ~ EQUALS ~ lexicon_option }
-lexicon_get = { (GET | SINGLETON) ~ LEXICON_VAR }
+lexicon_cmd = @{ SINGLETON ~ lexicon_key }
+lexicon_set = { ( (SET ~ lexicon_key) | lexicon_cmd) ~ EQUALS ~ lexicon_option }
+lexicon_var = { lexicon_key ~ EQUALS ~ lexicon_option }
+lexicon_get = { GET ~ lexicon_key }
 
-lexicon_search_set = { (SET | SINGLETON) ~ LEXICON_SEARCH_VAR ~ EQUALS ~ lexicon_option }
-lexicon_search_var = { LEXICON_SEARCH_VAR ~ EQUALS ~ lexicon_option }
-lexicon_search_get = { (GET | SINGLETON) ~ LEXICON_SEARCH_VAR }
+lexicon_search_cmd = ${ SINGLETON ~ lexicon_search_key }
+lexicon_search_set = { ( (SET ~ lexicon_search_key) | lexicon_search_cmd) ~ EQUALS ~ lexicon_option }
+lexicon_search_var = { lexicon_search_key ~ EQUALS ~ lexicon_option }
+lexicon_search_get = { GET ~ lexicon_search_key }
 
-lexicon_render_set = { (SET | SINGLETON) ~ LEXICON_RENDER_VAR ~ EQUALS ~ lexicon_option }
-lexicon_render_var = { LEXICON_RENDER_VAR ~ EQUALS ~ lexicon_option }
-lexicon_render_get = { (GET | SINGLETON) ~ LEXICON_RENDER_VAR }
+lexicon_render_cmd = ${ SINGLETON ~ lexicon_render_key }
+lexicon_render_set = { ( (SET ~ lexicon_render_key) | lexicon_render_cmd) ~ EQUALS ~ lexicon_option }
+lexicon_render_var = { lexicon_render_key ~ EQUALS ~ lexicon_option }
+lexicon_render_get = { GET ~ lexicon_render_key }
+
+lexicon_search_key = @{ (^"search" ~ ("." ~ lexicon_key)?) | (lexicon_key ~ "." ~ ^"search") }
+lexicon_render_key = @{ (^"render" ~ ("." ~ lexicon_key)?) | (lexicon_key ~ "." ~ ^"render") }
 
 lexicon_option = _{ LEXICONS }
 LEXICONS = _{ AVX | AV | DUAL }  // very specific domain for the AVX driver/parser implementation
@@ -160,45 +177,49 @@ AVX = ${ ^"modern" | ^"avx" }
 AV = ${ ^"kjv" | ^"av" }
 DUAL = ${ ^"dual" | ^"both" }
 
-match_key = @{ ^"similarity" }
-MATCH_VAR = _{ match_key }
-match_set = { (SET | SINGLETON) ~ MATCH_VAR ~ EQUALS ~ similarity_opt }
-match_var = { MATCH_VAR ~ EQUALS ~ similarity_opt }
-match_get = { (GET | SINGLETON) ~ MATCH_VAR }
+similarity_key = @{ ^"similarity" }
+similarity_cmd = @{ SINGLETON ~ similarity_key }
+similarity_set = { ( (SET ~ similarity_key) | similarity_cmd) ~ EQUALS ~ similarity_opt }
+similarity_var = { similarity_key ~ EQUALS ~ similarity_opt }
+similarity_get = { GET ~ similarity_key }
 
-match_word_set = { (SET | SINGLETON) ~ MATCH_WORD_VAR ~ EQUALS ~ similarity_opt }
-match_word_var = { MATCH_WORD_VAR ~ EQUALS ~ similarity_opt }
-match_word_get = { (GET | SINGLETON) ~ MATCH_WORD_VAR }
+similarity_word_cmd = ${ SINGLETON ~ similarity_word_key }
+similarity_word_set = { ( (SET ~ similarity_word_key) | similarity_word_cmd) ~ EQUALS ~ similarity_opt }
+similarity_word_var = { similarity_word_key ~ EQUALS ~ similarity_opt }
+similarity_word_get = { GET ~ similarity_word_key }
 
-match_lemma_set = { (SET | SINGLETON) ~ MATCH_LEMMA_VAR ~ EQUALS ~ similarity_opt }
-match_lemma_var = { MATCH_LEMMA_VAR ~ EQUALS ~ similarity_opt }
-match_lemma_get = { (GET | SINGLETON) ~ MATCH_LEMMA_VAR }
+similarity_lemma_cmd = ${ SINGLETON ~ similarity_lemma_key }
+similarity_lemma_set = { ( (SET ~ similarity_lemma_key) | similarity_lemma_cmd) ~ EQUALS ~ similarity_opt }
+similarity_lemma_var = { similarity_lemma_key ~ EQUALS ~ similarity_opt }
+similarity_lemma_get = { GET ~ similarity_lemma_key }
 
-similarity_opt = ${ EXACT | PRECISE | FUZZY }
+similarity_word_key = @{ (similarity_key ~ ".")? ~ ^"word" }
+similarity_lemma_key = @{ (similarity_key ~ ".")? ~ ^"lemma" }
 
-PRECISE = ${ ^"precise" | ("100" ~ PERCENT) }
-EXACT = ${ ^"exact" | "0" }
+similarity_opt = ${ FULL | NONE | FUZZY }
+
+NONE = ${ ^"off" }
+FULL = ${ "100" ~ PERCENT }
 THIRTY_SOMETHING = ${ "3" ~ ('3' .. '9') }
 FORTY_PLUS = ${ ('4' .. '9') ~ ('0' .. '9') }
 
 FUZZY = ${ (THIRTY_SOMETHING | FORTY_PLUS) ~ PERCENT } // legal thresholds are from 33 to 99 (100% is excluded because that would represent an exact-match
 
 format_key = @{ ^"format" }
-FORMAT_VAR = _{ format_key }
-format_set = { (SET | SINGLETON) ~ FORMAT_VAR ~ EQUALS ~ format_option }
-format_var = { FORMAT_VAR ~ EQUALS ~ format_option }
-format_get = { (GET | SINGLETON) ~ FORMAT_VAR }
+format_cmd = @{ SINGLETON ~ format_key }
+format_set = { ( (SET ~ format_key) | format_cmd) ~ EQUALS ~ format_option }
+format_var = { format_key ~ EQUALS ~ format_option }
+format_get = { GET ~ format_key }
 format_option = _{ html | markdown | textual | json | yaml }
-html = ${ ^"html" }
-markdown = ${ ^"markdown" | ^"md" }
-textual = ${ ^"text" | ^"utf8" }
-json = ${ ^"json" }
-yaml = ${ ^"yaml" }
+html = @{ ^"html" }
+markdown = @{ ^"markdown" | ^"md" }
+textual = @{ ^"text" | ^"utf8" }
+json = @{ ^"json" }
+yaml = @{ ^"yaml" }
 
 all_key = @{ ^"all" }
-ALL_VAR = _{ all_key }
-all_var = {ALL_VAR ~ EQUALS ~ all_option }
-all_get = { (GET | SINGLETON) ~ ALL_VAR }
+all_var = {all_key ~ EQUALS ~ all_option }
+all_get = { GET ~ all_key? }
 all_option = _{ current | defaults }
 
 filter_opt = _{ filter_spec ~ chapter_range* }
@@ -206,25 +227,23 @@ filter_spec = { onetwothree* ~ text+ }
 chapter_range = { ((DIGIT_byte ~ (HYPHEN ~ DIGIT_byte)?) ~ COMMA?) }
 onetwothree = _{ ('1' .. '3') }
 bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
-var_opt = _{ span_var | lexicon_var | lexicon_search_var | lexicon_render_var | match_var | match_lemma_var | match_word_var | format_var | all_var }
-get_opt = { span_get | lexicon_get | lexicon_search_get | lexicon_render_get | match_get | match_lemma_get | match_word_get | format_get | version_get | all_get }
+var_opt = _{ span_var | lexicon_var | lexicon_search_var | lexicon_render_var | similarity_var | similarity_lemma_var | similarity_word_var | format_var | all_var }
+get_opt = { span_get | lexicon_get | lexicon_search_get | lexicon_render_get | similarity_get | similarity_lemma_get | similarity_word_get | format_get | version_get | all_get }
 macro_directive = { "||" ~ tag }
 
 tag_parameter = _{ tag | wildcard }
 hashtag_txt = ${ POUND ~ tag }
-historic_parameter = _{ historic_sequence | hashtag_num | id_range }
-historic_sequence = ${ id ~ HYPHEN ~ id }
 hashtag_num = ${ POUND ~ id }
-invoke_id = ${ SINGLETON ~ id }
-id = ${ ('1' .. '9') ~ ( '0' .. '9')* }
+//invoke_id = ${ SINGLETON ~ id }
+id = @{ ('1' .. '9') ~ ( '0' .. '9')* }
 
 decoration = { italics | jesus }
-pos32 = ${ "#" ~ HEX32 }
-pn_pos12 = ${ "#" ~ HEX16 }
-greek = ${ DIGITS ~ ^":G" }
-hebrew = ${ DIGITS ~ ^":H" }
+pos32 = @{ BRACE_OPEN ~ HEX32 ~ BRACE_CLOSE }
+pn_pos12 = @{ BRACE_OPEN ~ HEX16 ~ BRACE_CLOSE }
+greek = @{ DIGITS ~ ^":G" }
+hebrew = @{ DIGITS ~ ^":H" }
 
-lemma = { "\\" ~ text ~ "\\" }
+lemma = { PAREN_OPEN ~ text ~ PAREN_CLOSE }
 
 wildcard = ${ (term_begin | STAR) ~ term_contains* ~ term_end? }
 
@@ -234,273 +253,267 @@ append = { ">>" ~  filename }
 output = { ">" ~ filename }
 overwrite = { "=>" ~ filename }
 
-FILESPEC = _{ ('a' .. 'z' | 'A' .. 'Z' | DIGIT) | "/" | "\\" | "-" | "_" | ":" }
-quoted_filespec = ${ QUOTE ~ FILESPEC ~ (FILESPEC | " ") + ~ QUOTE }
+FILESPEC = @{ ('a' .. 'z' | 'A' .. 'Z' | DIGIT) | "/" | "\\" | "-" | "_" | ":" }
+quoted_filespec = ${ QUOTE ~ FILESPEC ~ (FILESPEC | " ")+ ~ QUOTE }
 unquoted_legal = ${ FILESPEC+ }
 filename = { quoted_filespec | unquoted_legal }
 
-nupos = {
-	^"#a-acp" |
-	^"#av" |
-	^"#av-an" |
-	^"#av-c" |
-	^"#avc-jn" |
-	^"#av-d" |
-	^"#av-dc" |
-	^"#av-ds" |
-	^"#av-dx" |
-	^"#av-j" |
-	^"#av-jc" |
-	^"#av-jn" |
-	^"#av-js" |
-	^"#av-n1" |
-	^"#av-s" |
-	^"#avs-jn" |
-	^"#av-vvg" |
-	^"#av-vvn" |
-	^"#av-x" |
-	^"#c-acp" |
-	^"#cc" |
-	^"#cc-acp" |
-	^"#c-crq" |
-	^"#ccx" |
-	^"#crd" |
-	^"#cs" |
-	^"#cst" |
-	^"#d" |
-	^"#dc" |
-	^"#dg" |
-	^"#ds" |
-	^"#dt" |
-	^"#dx" |
-	^"#fw-es" |
-	^"#fw-fr" |
-	^"#fw-ge" |
-	^"#fw-gr" |
-	^"#fw-it" |
-	^"#fw-la" |
-	^"#fw-mi" |
-	^"#j" |
-	^"#j-av" |
-	^"#jc" |
-	^"#jc-jn" |
-	^"#jc-vvg" |
-	^"#jc-vvn" |
-	^"#j-jn" |
-	^"#j-u" |
-	^"#j-vvnu" |
-	^"#jp" |
-	^"#js" |
-	^"#js-jn" |
-	^"#js-vvg" |
-	^"#js-vvn" |
-	^"#j-vvg" |
-	^"#j-vvn" |
-	^"#n1" |
-	^"#n1-an" |
-	^"#n1-j" |
-	^"#n11vbz" |
-	^"#n2" |
-	^"#n2-acp" |
-	^"#n2-an" |
-	^"#n2-av" |
-	^"#n2-dx" |
-	^"#n2-j" |
-	^"#n2-jn" |
-	^"#n2-vdg" |
-	^"#n2-vhg" |
-	^"#n2-vvg" |
-	^"#n2-vvn" |
-	^"#ng1" |
-	^"#ng1-an" |
-	^"#ng1-j" |
-	^"#ng1-jn" |
-	^"#ng1-vvn" |
-	^"#ng2" |
-	^"#ng2-jn" |
-	^"#n-jn" |
-	^"#njp" |
-	^"#njp2" |
-	^"#njpg1" |
-	^"#njpg2" |
-	^"#np1" |
-	^"#np2" |
-	^"#npg1" |
-	^"#npg2" |
-	^"#np-n1" |
-	^"#np-n2" |
-	^"#np-ng1" |
-	^"#np1-n" |
-	^"#n-vdg" |
-	^"#n-vhg" |
-	^"#n-vvg" |
-	^"#n-vvn" |
-	^"#ord" |
-	^"#p-acp" |
-	^"#pc-acp" |
-	^"#pi" |
-	^"#pi2" |
-	^"#pi2x" |
-	^"#pig" |
-	^"#pigx" |
-	^"#pix" |
-	^"#pn22" |
-	^"#pn31" |
-	^"#png11" |
-	^"#png12" |
-	^"#png21" |
-	^"#png22" |
-	^"#png31" |
-	^"#png32" |
-	^"#pno11" |
-	^"#pno12" |
-	^"#pno21" |
-	^"#pno31" |
-	^"#pno32" |
-	^"#pns11" |
-	^"#pns12" |
-	^"#pns21" |
-	^"#pns31" |
-	^"#pns32" |
-	^"#po11" |
-	^"#po12" |
-	^"#po21" |
-	^"#po22" |
-	^"#po31" |
-	^"#po32" |
-	^"#pp" |
-	^"#pp-f" |
-	^"#px11" |
-	^"#px12" |
-	^"#px21" |
-	^"#px22" |
-	^"#px31" |
-	^"#px32" |
-	^"#pxg21" |
-	^"#q-crq" |
-	^"#r-crq" |
-	^"#ro-crq" |
-	^"#qo-crq" |
-	^"#rg-crq" |
-	^"#n-crq" |
-	^"#sy" |
-	^"#uh" |
-	^"#uh-av" |
-	^"#uh-crq" |
-	^"#uh-dx" |
-	^"#uh-j" |
-	^"#uh-jn" |
-	^"#uh-np" |
-	^"#uh-n" |
-	^"#uh-v" |
-	^"#uh-x" |
-	^"#vb2" |
-	^"#vb2-imp" |
-	^"#vb2r" |
-	^"#vb2x" |
-	^"#vbb" |
-	^"#vbbx" |
-	^"#vbd" |
-	^"#vbds" |
-	^"#vbd2s" |
-	^"#vbdr" |
-	^"#vbd2r" |
-	^"#vbd2" |
-	^"#vbd2x" |
-	^"#vbdp" |
-	^"#vbdx" |
-	^"#vbg" |
-	^"#vbi" |
-	^"#vbm" |
-	^"#vbmx" |
-	^"#vbn" |
-	^"#vbp" |
-	^"#vbr" |
-	^"#vbz" |
-	^"#vbzx" |
-	^"#vd2" |
-	^"#vd2-imp" |
-	^"#vd2x" |
-	^"#vdb" |
-	^"#vdbx" |
-	^"#vdd" |
-	^"#vdd2" |
-	^"#vdd2x" |
-	^"#vddp" |
-	^"#vddx" |
-	^"#vdg" |
-	^"#vdi" |
-	^"#vdn" |
-	^"#vdp" |
-	^"#vdz" |
-	^"#vdzx" |
-	^"#vh2" |
-	^"#vh2-imp" |
-	^"#vh2x" |
-	^"#vhb" |
-	^"#vhbx" |
-	^"#vhd" |
-	^"#vhd2" |
-	^"#vhdp" |
-	^"#vhdx" |
-	^"#vhg" |
-	^"#vhi" |
-	^"#vhn" |
-	^"#vhp" |
-	^"#vhz" |
-	^"#vhzx" |
-	^"#vm2" |
-	^"#vm2x" |
-	^"#vmb" |
-	^"#vmb1" |
-	^"#vmbx" |
-	^"#vmd" |
-	^"#vm2" |
-	^"#vmd2" |
-	^"#vmd2x" |
-	^"#vmdp" |
-	^"#vmdx" |
-	^"#vmi" |
-	^"#vmn" |
-	^"#vmp" |
-	^"#vv2" |
-	^"#vv2-imp" |
-	^"#vv2x" |
-	^"#vvb" |
-	^"#vvbx" |
-	^"#vvd" |
-	^"#vvd2" |
-	^"#vvd2x" |
-	^"#vvdp" |
-	^"#vvdx" |
-	^"#vvg" |
-	^"#vvi" |
-	^"#vvn" |
-	^"#vvp" |
-	^"#vvz" |
-	^"#vvzx" |
-	^"#xx" |
-	^"#zz" }
+nupos = { BRACE_OPEN ~ (
+	^"a-acp" |
+	^"av" |
+	^"av-an" |
+	^"av-c" |
+	^"avc-jn" |
+	^"av-d" |
+	^"av-dc" |
+	^"av-ds" |
+	^"av-dx" |
+	^"av-j" |
+	^"av-jc" |
+	^"av-jn" |
+	^"av-js" |
+	^"av-n1" |
+	^"av-s" |
+	^"avs-jn" |
+	^"av-vvg" |
+	^"av-vvn" |
+	^"av-x" |
+	^"c-acp" |
+	^"cc" |
+	^"cc-acp" |
+	^"c-crq" |
+	^"ccx" |
+	^"crd" |
+	^"cs" |
+	^"cst" |
+	^"d" |
+	^"dc" |
+	^"dg" |
+	^"ds" |
+	^"dt" |
+	^"dx" |
+	^"fw-es" |
+	^"fw-fr" |
+	^"fw-ge" |
+	^"fw-gr" |
+	^"fw-it" |
+	^"fw-la" |
+	^"fw-mi" |
+	^"j" |
+	^"j-av" |
+	^"jc" |
+	^"jc-jn" |
+	^"jc-vvg" |
+	^"jc-vvn" |
+	^"j-jn" |
+	^"j-u" |
+	^"j-vvnu" |
+	^"jp" |
+	^"js" |
+	^"js-jn" |
+	^"js-vvg" |
+	^"js-vvn" |
+	^"j-vvg" |
+	^"j-vvn" |
+	^"n1" |
+	^"n1-an" |
+	^"n1-j" |
+	^"n11vbz" |
+	^"n2" |
+	^"n2-acp" |
+	^"n2-an" |
+	^"n2-av" |
+	^"n2-dx" |
+	^"n2-j" |
+	^"n2-jn" |
+	^"n2-vdg" |
+	^"n2-vhg" |
+	^"n2-vvg" |
+	^"n2-vvn" |
+	^"ng1" |
+	^"ng1-an" |
+	^"ng1-j" |
+	^"ng1-jn" |
+	^"ng1-vvn" |
+	^"ng2" |
+	^"ng2-jn" |
+	^"n-jn" |
+	^"njp" |
+	^"njp2" |
+	^"njpg1" |
+	^"njpg2" |
+	^"np1" |
+	^"np2" |
+	^"npg1" |
+	^"npg2" |
+	^"np-n1" |
+	^"np-n2" |
+	^"np-ng1" |
+	^"np1-n" |
+	^"n-vdg" |
+	^"n-vhg" |
+	^"n-vvg" |
+	^"n-vvn" |
+	^"ord" |
+	^"p-acp" |
+	^"pc-acp" |
+	^"pi" |
+	^"pi2" |
+	^"pi2x" |
+	^"pig" |
+	^"pigx" |
+	^"pix" |
+	^"pn22" |
+	^"pn31" |
+	^"png11" |
+	^"png12" |
+	^"png21" |
+	^"png22" |
+	^"png31" |
+	^"png32" |
+	^"pno11" |
+	^"pno12" |
+	^"pno21" |
+	^"pno31" |
+	^"pno32" |
+	^"pns11" |
+	^"pns12" |
+	^"pns21" |
+	^"pns31" |
+	^"pns32" |
+	^"po11" |
+	^"po12" |
+	^"po21" |
+	^"po22" |
+	^"po31" |
+	^"po32" |
+	^"pp" |
+	^"pp-f" |
+	^"px11" |
+	^"px12" |
+	^"px21" |
+	^"px22" |
+	^"px31" |
+	^"px32" |
+	^"pxg21" |
+	^"q-crq" |
+	^"r-crq" |
+	^"ro-crq" |
+	^"qo-crq" |
+	^"rg-crq" |
+	^"n-crq" |
+	^"sy" |
+	^"uh" |
+	^"uh-av" |
+	^"uh-crq" |
+	^"uh-dx" |
+	^"uh-j" |
+	^"uh-jn" |
+	^"uh-np" |
+	^"uh-n" |
+	^"uh-v" |
+	^"uh-x" |
+	^"vb2" |
+	^"vb2-imp" |
+	^"vb2r" |
+	^"vb2x" |
+	^"vbb" |
+	^"vbbx" |
+	^"vbd" |
+	^"vbds" |
+	^"vbd2s" |
+	^"vbdr" |
+	^"vbd2r" |
+	^"vbd2" |
+	^"vbd2x" |
+	^"vbdp" |
+	^"vbdx" |
+	^"vbg" |
+	^"vbi" |
+	^"vbm" |
+	^"vbmx" |
+	^"vbn" |
+	^"vbp" |
+	^"vbr" |
+	^"vbz" |
+	^"vbzx" |
+	^"vd2" |
+	^"vd2-imp" |
+	^"vd2x" |
+	^"vdb" |
+	^"vdbx" |
+	^"vdd" |
+	^"vdd2" |
+	^"vdd2x" |
+	^"vddp" |
+	^"vddx" |
+	^"vdg" |
+	^"vdi" |
+	^"vdn" |
+	^"vdp" |
+	^"vdz" |
+	^"vdzx" |
+	^"vh2" |
+	^"vh2-imp" |
+	^"vh2x" |
+	^"vhb" |
+	^"vhbx" |
+	^"vhd" |
+	^"vhd2" |
+	^"vhdp" |
+	^"vhdx" |
+	^"vhg" |
+	^"vhi" |
+	^"vhn" |
+	^"vhp" |
+	^"vhz" |
+	^"vhzx" |
+	^"vm2" |
+	^"vm2x" |
+	^"vmb" |
+	^"vmb1" |
+	^"vmbx" |
+	^"vmd" |
+	^"vm2" |
+	^"vmd2" |
+	^"vmd2x" |
+	^"vmdp" |
+	^"vmdx" |
+	^"vmi" |
+	^"vmn" |
+	^"vmp" |
+	^"vv2" |
+	^"vv2-imp" |
+	^"vv2x" |
+	^"vvb" |
+	^"vvbx" |
+	^"vvd" |
+	^"vvd2" |
+	^"vvd2x" |
+	^"vvdp" |
+	^"vvdx" |
+	^"vvg" |
+	^"vvi" |
+	^"vvn" |
+	^"vvp" |
+	^"vvz" |
+	^"vvzx" |
+	^"xx" |
+	^"zz") ~ BRACE_CLOSE }
 
-match_word_key = @{ ^"word" }
-match_lemma_key = @{ ^"lemma" }
-MATCH_LEMMA_VAR = _{ match_lemma_key | (match_key ~ "." ~ match_lemma_key ) }
-MATCH_WORD_VAR = _{ match_word_key | (match_key ~ "." ~ match_word_key ) }
+id_range = _{ (id_from ~ id_until) | (id_until ~ id_from) | id_until | id_from }
+id_from = { ^"from" ~ POUND ~ id }
+id_until = { ^"to" ~ POUND ~ id }
 
-lexicon_search_key = @{ ^"search" }
-lexicon_render_key = @{ ^"render" }
-LEXICON_SEARCH_VAR = _{ lexicon_search_key | (lexicon_key ~ "." ~ lexicon_search_key ) | (lexicon_search_key ~ "." ~ lexicon_key ) }
-LEXICON_RENDER_VAR = _{ lexicon_render_key | (lexicon_key ~ "." ~ lexicon_render_key ) | (lexicon_render_key ~ "." ~ lexicon_key ) }
-
-any_range = _{ (id_range ~ date_range*) | (date_range ~ id_range*) }
-id_range = _{ (id_from | id_until) | (id_until | id_from) }
-id_from = { ^"from" ~ id }
-id_until = { ^"until" ~ id }
-
-date_range = _{ (date_from | date_until) | (date_until | date_from) }
-date_from = { ^"from" ~ history_date }
-date_until = { ^"until" ~ history_date }
-history_date = ${ "20" ~ DIGIT ~ DIGIT ~ "/" ~ DIGIT ~ DIGIT? ~ "/" ~ DIGIT ~ DIGIT? }
+date_range = _{ (date_from ~ date_until) | (date_until ~ date_from) | date_until | date_from }
+date_from = { ^"from" ~ yyyymmdd }
+date_until = { ^"to" ~ yyyymmdd }
+yyyymmdd = _{ yyyymmdd_slash | yyyymmdd_slash }
+yyyymmdd_slash = ${ yyyy ~ "/" ~ mm ~ "/" ~ dd }
+yyyymmdd_dash = ${ yyyy ~ "-" ~ mm ~ "-" ~ dd }
+yyyy= ${ "20" ~ DIGIT ~ DIGIT }
+mm = ${ DIGIT ~ DIGIT? }
+dd = ${ DIGIT ~ DIGIT? }
 
 DIGIT = _{ '0' .. '9' }
 HEX = _{ DIGIT | ('a' .. 'f') | ('A' .. 'F') }
@@ -517,25 +530,31 @@ tag = ${ LABEL_FIRST_CHAR ~ LABEL_CHAR* }
 LABEL_CHAR = _{ (DIGIT | "-" | "_" | LABEL_FIRST_CHAR) }
 LABEL_FIRST_CHAR = _{ ( 'a' .. 'z' | 'A' .. 'Z') }
 
-version_get = { (GET | SINGLETON) ~ VERSION_VAR }
+version_get = { GET ~ VERSION_VAR }
 version_key = @{ ^"version" }
 revision_key = @{ ^"revision" }
 VERSION_VAR = _{ version_key | revision_key }
 
+SQUIGGLY_CLOSE = _{ "}" }
+SQUIGGLY_OPEN = _{ "{" }
+PAREN_CLOSE = _{ ")" }
+PAREN_OPEN = _{ "(" }
+BRACE_CLOSE = _{ "]" }
+BRACE_OPEN = _{ "[" }
 OR = _{ "|" }
 POUND = _{ "#" }
 FILTER_OP = _{ "<" }
 QUOTE = _{ "\"" }
-ASSIGN_OP = _{ ":" }
+ASSIGN_OP = _{ "+" }
 EQUALS = _{ "=" }
 STAR = _{ "*" }
 COMMA = _{ "," }
 SPACE = _{ " " }
 PERCENT = _{ "%" }
-SET = _{ SINGLETON ~ set_command }
-set_command = ${ ^"set" }
-GET = _{ SINGLETON ~ get_command }
-get_command = ${ ^"get" }
+SET = _{ set_command }
+set_command = ${ SINGLETON ~ ^"set" }
+GET = _{ get_command }
+get_command = ${ SINGLETON ~ ^"get" }
 SINGLETON = _{ "@" }
 not = { "-" }
 
