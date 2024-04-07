@@ -117,12 +117,12 @@ help_cmd = @{ SINGLETON ~ ^"exit" }
 view = { view_cmd ~ (id | tag) }
 view_bulk = { bulk_view_history | bulk_view_macros }
 bulk_view_history = _{ history_cmd ~ (date_range | id_range)? }
-bulk_view_macros = _{ macros_cmd ~ (wildcard | date_range | id_range)? }
+bulk_view_macros = _{ macros_cmd ~ (wildcard | date_range) }
 
 delete = { delete_cmd ~ (id | tag) }
 delete_bulk = { bulk_delete_history | bulk_delete_macros }
 bulk_delete_history = _{ history_cmd ~ delete_arg ~ (date_range | all_key) }
-bulk_delete_macros = _{ macros_cmd ~ delete_arg ~ (wildcard | date_range) }
+bulk_delete_macros = _{ macros_cmd ~ delete_arg ~ (wildcard | date_range | id_range) }
 
 delete_cmd = @{ SINGLETON ~ ^"delete" }
 delete_arg = ${ ^"delete" }
