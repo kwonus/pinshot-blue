@@ -14,7 +14,7 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | selection_statement }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "4407" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "4411" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 selection_statement = { (suffixes | (expression_block ~ suffixes?)) ~ directive? }
 suffixes = _{ (settings_block ~ scoping_block?) | (scoping_block ~ settings_block?)}
@@ -230,10 +230,26 @@ var_opt = _{ span_var | lexicon_var | lexicon_search_var | lexicon_render_var | 
 get_opt = { span_get | lexicon_get | lexicon_search_get | lexicon_render_get | similarity_get | similarity_lemma_get | similarity_word_get | format_get | version_get | all_get }
 macro_directive = { "||" ~ tag }
 
-tag_parameter = _{ tag | wildcard }
 hashtag_txt = ${ POUND ~ tag }
 hashtag_num = ${ POUND ~ id }
-id = ${ ('1' .. '9') ~ ( '0' .. '9')* }
+
+// we cannot have a non-numeric in first position, else today-only tags become ambiguous with macro tags
+// allowing zero in first position allows us to prefix a zero on an alpha digit in first position
+seq = ${ ('0' .. '9') ~ (('0' .. '9') ~ ('a' .. 'z') | ('A' .. 'Z'))* }
+// Making date-portion optional, enables today-only tags
+id = ${ ((id_longhand | id_shorthand | id_this_month_only_shorthand) ~ DOT)? ~ seq }
+
+id_longhand = ${ id_longhand_year ~ id_longhand_month ~ id_longhand_day } // e.g. 20240216.123
+id_longhand_year = ${ ("2" ~ ( '0' .. '1'))? ~ ( '0' .. '9') ~ ( '0' .. '9') } // 2000 to 2199
+id_longhand_month = ${ ("0" ~ ('1' .. '9')) | ("1" ~ ('0' .. '2')) } // 01 to 12
+id_longhand_day = ${ ("0" ~ ('1' .. '9')) | (('1' .. '2') ~ ('0' .. '9')) | ("3" ~ ('0' .. '1')) } // e.g.42g.123
+
+id_shorthand = ${ id_shorthand_year ~ id_shorthand_month ~ id_shorthand_day }  // e.g.42g.123
+id_shorthand_year = ${ '0' .. '9' } // Shorthand available for the previous (10 years minus 1 day)
+id_shorthand_month = ${ ('1' .. '9') ~ (('a' .. 'c') | ('A' .. 'C')) } // 1 to 0xC
+id_shorthand_day = ${ ('1' .. '9') ~ (('a' .. 'v') | ('A' .. 'V')) } // 1 to 31 (V in base 32 or base 36)
+
+id_this_month_only_shorthand = ${ ('1' .. '9') ~ ('0' .. '9')? }
 
 decoration = { italics | jesus }
 pos32 = @{ BRACE_OPEN ~ HEX32 ~ BRACE_CLOSE }
@@ -549,6 +565,7 @@ STAR = _{ "*" }
 COMMA = _{ "," }
 SPACE = _{ " " }
 PERCENT = _{ "%" }
+DOT = _{ "." }
 SET = _{ set_command }
 set_command = ${ SINGLETON ~ ^"set" }
 GET = _{ get_command }
