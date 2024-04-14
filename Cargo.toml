@@ -1,6 +1,6 @@
 [package]
 name = "pinshot-blue"
-version = "4.4.11"
+version = "4.4.14"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
