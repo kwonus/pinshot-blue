@@ -116,12 +116,12 @@ help_cmd = @{ SINGLETON ~ ^"exit" }
 
 view = { view_cmd ~ (id | tag) }
 view_bulk = { bulk_view_history | bulk_view_macros }
-bulk_view_history = _{ history_cmd ~ (date_range | id_range)? }
+bulk_view_history = _{ history_cmd ~ date_range? }
 bulk_view_macros = _{ macros_cmd ~ (wildcard | date_range)? }
 
 delete = { delete_cmd ~ (id | tag) }
 delete_bulk = { bulk_delete_history | bulk_delete_macros }
-bulk_delete_history = _{ history_cmd ~ delete_arg ~ (date_range | id_range | all_key) }
+bulk_delete_history = _{ history_cmd ~ delete_arg ~ (date_range | all_key) }
 bulk_delete_macros = _{ macros_cmd ~ delete_arg ~ (wildcard | date_range | all_key) }
 
 delete_cmd = @{ SINGLETON ~ ^"delete" }
@@ -514,10 +514,6 @@ nupos = { BRACE_OPEN ~ (
 	^"vvzx" |
 	^"xx" |
 	^"zz") ~ BRACE_CLOSE }
-
-id_range = _{ (id_from ~ id_until?) | (id_until ~ id_from?) }
-id_from = { ^"from" ~ id }
-id_until = { ^"to" ~ id }
 
 date_range = _{ (date_from ~ date_until) | (date_until ~ date_from) | date_until | date_from }
 date_from = { ^"from" ~ yyyymmdd }
