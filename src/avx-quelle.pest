@@ -14,7 +14,7 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | selection_statement }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "4414" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "4421" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 selection_statement = { (suffixes | (expression_block ~ suffixes?)) ~ directive? }
 suffixes = _{ (settings_block ~ scoping_block?) | (scoping_block ~ settings_block?)}
@@ -267,7 +267,7 @@ append = { ">>" ~  filename }
 output = { ">" ~ filename }
 overwrite = { "=>" ~ filename }
 
-FILESPEC = @{ ('a' .. 'z' | 'A' .. 'Z' | DIGIT) | "/" | "\\" | "-" | "_" | ":" }
+FILESPEC = @{ ('a' .. 'z' | 'A' .. 'Z' | DIGIT) | "/" | "\\" | "-" | "_" | ":" | "." }
 quoted_filespec = ${ QUOTE ~ FILESPEC ~ (FILESPEC | " ")+ ~ QUOTE }
 unquoted_legal = ${ FILESPEC+ }
 filename = { quoted_filespec | unquoted_legal }
