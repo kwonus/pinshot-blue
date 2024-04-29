@@ -14,7 +14,7 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | selection_statement }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "4421" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "4428" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 selection_statement = { (suffixes | (expression_block ~ suffixes?)) ~ directive? }
 suffixes = _{ (settings_block ~ scoping_block?) | (scoping_block ~ settings_block?)}
@@ -25,7 +25,7 @@ settings_block = { assignment_macro | assignment+  }
 macro_utilization = _{ hashtag_txt | hashtag_num }
 singleton = { exit | help | view | view_bulk | delete | delete_bulk | use | set | get | clear }
 
-export_directive = { (output | append | overwrite) }
+export_directive = { (output | append | overwrite | stream) }
 filter = { FILTER_OP ~ filter_opt }
 filter_macro = _{ FILTER_OP ~ macro_utilization }
 assignment = { ASSIGN_OP ~ var_opt }
@@ -222,10 +222,10 @@ all_get = { GET ~ all_key? }
 all_option = _{ current | defaults }
 
 filter_opt = _{ filter_spec ~ chapter_range* }
-filter_spec = { onetwothree* ~ text+ }
+filter_spec = { (onetwothree* ~ text+) | book_num }
 chapter_range = { ((DIGIT_byte ~ (HYPHEN ~ DIGIT_byte)?) ~ COMMA?) }
 onetwothree = _{ ('1' .. '3') }
-bookNum  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
+book_num  = ${ ('1' .. '9') | (('1' .. '5') ~ DIGIT) ~ ( "6" ~ ('1' .. '6')) } // 1-66
 var_opt = _{ span_var | lexicon_var | lexicon_search_var | lexicon_render_var | similarity_var | similarity_lemma_var | similarity_word_var | format_var | all_var }
 get_opt = { span_get | lexicon_get | lexicon_search_get | lexicon_render_get | similarity_get | similarity_lemma_get | similarity_word_get | format_get | version_get | all_get }
 macro_directive = { "||" ~ tag }
@@ -264,8 +264,9 @@ wildcard = ${ (term_begin | STAR) ~ term_contains* ~ term_end? }
 ellipsis = _{ "..." }
 
 append = { ">>" ~  filename }
-output = { ">" ~ filename }
-overwrite = { "=>" ~ filename }
+output = { "?>" ~ filename }
+overwrite = { ">" ~ filename }
+stream = { "::" ~ format_option }
 
 FILESPEC = @{ ('a' .. 'z' | 'A' .. 'Z' | DIGIT) | "/" | "\\" | "-" | "_" | ":" | "." }
 quoted_filespec = ${ QUOTE ~ FILESPEC ~ (FILESPEC | " ")+ ~ QUOTE }
