@@ -14,7 +14,7 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | selection_statement }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "4428" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "4430" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 selection_statement = { (suffixes | (expression_block ~ suffixes?)) ~ directive? }
 suffixes = _{ (settings_block ~ scoping_block?) | (scoping_block ~ settings_block?)}
@@ -209,6 +209,7 @@ format_cmd = @{ SINGLETON ~ format_key }
 format_set = { ( (SET ~ format_key) | format_cmd) ~ EQUALS ~ format_option }
 format_var = { format_key ~ EQUALS ~ format_option }
 format_get = { GET ~ format_key }
+
 format_option = _{ html | markdown | textual | yaml /*| json*/ }
 html = @{ ^"html" }
 markdown = @{ ^"markdown" | ^"md" }
@@ -266,7 +267,8 @@ ellipsis = _{ "..." }
 append = { ">>" ~  filename }
 output = { "?>" ~ filename }
 overwrite = { ">" ~ filename }
-stream = { "::" ~ format_option }
+stream = { ":=" ~ format_option }
+stream_all = { "::" ~ format_option }
 
 FILESPEC = @{ ('a' .. 'z' | 'A' .. 'Z' | DIGIT) | "/" | "\\" | "-" | "_" | ":" | "." }
 quoted_filespec = ${ QUOTE ~ FILESPEC ~ (FILESPEC | " ")+ ~ QUOTE }
