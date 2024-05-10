@@ -25,7 +25,7 @@ settings_block = { assignment_macro | assignment+  }
 macro_utilization = _{ hashtag_txt | hashtag_num }
 singleton = { exit | help | view | view_bulk | delete | delete_bulk | use | set | get | clear }
 
-export_directive = { (output | append | overwrite | stream) }
+export_directive = { (output | append | overwrite | stream | stream_all) }
 filter = { FILTER_OP ~ filter_opt }
 filter_macro = _{ FILTER_OP ~ macro_utilization }
 assignment = { ASSIGN_OP ~ var_opt }
@@ -209,7 +209,6 @@ format_cmd = @{ SINGLETON ~ format_key }
 format_set = { ( (SET ~ format_key) | format_cmd) ~ EQUALS ~ format_option }
 format_var = { format_key ~ EQUALS ~ format_option }
 format_get = { GET ~ format_key }
-
 format_option = _{ html | markdown | textual | yaml /*| json*/ }
 html = @{ ^"html" }
 markdown = @{ ^"markdown" | ^"md" }
