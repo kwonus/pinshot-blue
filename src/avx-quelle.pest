@@ -14,7 +14,7 @@
 WHITESPACE = _ { " " | "\t" | "\r" | "\n" }
 statement = { avx_rev | singleton | selection_statement }
 AVX_QUERY = _{ ^"_AVX_REV_" ~  "=?" }
-avx_rev = { AVX_QUERY ~ "4430" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
+avx_rev = { AVX_QUERY ~ "5127" }   // grammar rule allows clients to assert expected version compatibility via extern C function call
 
 selection_statement = { (suffixes | (expression_block ~ suffixes?)) ~ directive? }
 suffixes = _{ (settings_block ~ scoping_block?) | (scoping_block ~ settings_block?)}
@@ -23,7 +23,7 @@ expression_block = { macro_utilization | search }
 scoping_block = { filter_macro | filter+ }
 settings_block = { assignment_macro | assignment+  }
 macro_utilization = _{ hashtag_txt | hashtag_num }
-singleton = { exit | help | view | view_bulk | delete | delete_bulk | use | set | get | clear }
+singleton = { help | control | view | view_bulk | delete | delete_bulk | use | set | get | clear }
 
 export_directive = { (output | append | overwrite | stream | stream_all) }
 filter = { FILTER_OP ~ filter_opt }
@@ -109,10 +109,13 @@ punc = { punc_any | punc_question | punc_declare | punc_dash | punc_semi | punc_
 italics = { ^"/italics/" }
 jesus = { ^"/Jesus/" }
 
-exit = { exit_cmd }
+control = { exit_cmd | backup_cmd | restore_cmd | migrate_cmd}
 exit_cmd = @{ SINGLETON ~ ^"exit" }
+backup_cmd = @{ SINGLETON ~ ^"backup" }
+restore_cmd = @{ SINGLETON ~ ^"restore" }
+migrate_cmd = @{ SINGLETON ~ ^"migrate" }
 help = { help_cmd ~ text* }
-help_cmd = @{ SINGLETON ~ ^"exit" }
+help_cmd = @{ SINGLETON ~ ^"help" }
 
 view = { view_cmd ~ (id | tag) }
 view_bulk = { bulk_view_history | bulk_view_macros }
